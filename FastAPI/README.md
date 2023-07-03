@@ -23,8 +23,11 @@ If it runs properly, result will be following :
 
 2. predict
 This API offer predict function.
-Now developing..
+Predict is implemented by using CLIPSEG.
+If is runs properly, a jpg file will be returned.
+Also, the output will be saved in following path, using {image_id} :
+'/opt/ml/level3_cv_finalproject-cv-09/FastAPI/predicts'
 
 3. download
 This API offer download function.
-You can download an image by using image name.
+You can download an image by using image id, used in upload session.
