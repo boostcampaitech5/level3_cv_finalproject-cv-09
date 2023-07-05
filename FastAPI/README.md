@@ -28,6 +28,15 @@ If is runs properly, a jpg file will be returned.
 Also, the output will be saved in following path, using {image_id} :
 '/opt/ml/level3_cv_finalproject-cv-09/FastAPI/predicts'
 
+Predict API will be removed soon since it is implemented not by communicating with client, but by using server.
+
+* Error
+- Output image is very noisy
+
 3. download
 This API offer download function.
 You can download an image by using image id, used in upload session.
+
+4. feedback
+This API offer feedback function.
+It is possible to send review or feedback about the annotation result using the API.

@@ -1,21 +1,18 @@
 from typing import Union
 import os
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from transformers import CLIPSegProcessor, CLIPSegForImageSegmentation
 from PIL import Image
 import torch
-import cv2
-import numpy as np
 from torchvision import transforms
 from models.clip_seg import CLIPDensePredT
 import matplotlib.pyplot as plt
-import io
+from pydantic import BaseModel
 
 IMG_DIR = '/opt/level3_cv_finalproject-cv-09/images/N-B-P-021_000109.jpg'
-FOLDER_DIR = '/opt/ml/level3_cv_finalproject-cv-09/FastAPI/images'
-PREDICT_DIR = '/opt/ml/level3_cv_finalproject-cv-09/FastAPI/predicts'
+FOLDER_DIR = '/opt/ml/level3_cv_finalproject-cv-09/FastAPI/data/'
+
 app = FastAPI()
 
 def prediction(path, prompts, model):
@@ -30,8 +27,7 @@ def prediction(path, prompts, model):
     with torch.no_grad():
         repeat_num = len(prompts)
         preds = model(img.repeat(repeat_num,1,1,1).cuda(), prompts)[0]
-        
-    # print("pred shape : ", preds.shape)
+
     return preds
 
 def visualize_segmentation(preds, threshold = 0.5):
@@ -44,48 +40,70 @@ def visualize_segmentation(preds, threshold = 0.5):
     # Get the top mask index for each pixel
     inds = torch.topk(flat_preds_with_treshold, 1, dim=0).indices.reshape((preds.shape[-2], preds.shape[-1]))
 
-    # segmentation_figure = plt.figure(figsize=(10, 10))
-    # plt.axis('off')
-    # plt.imshow(inds)
-    # img_buf = io.BytesIO()
-    # plt.savefig('predict.jpg')
-    # plt.close(segmentation_figure)
-    # return img_buf
-    # st.pyplot(segmentation_figure)
     return inds
 
-# Upload an image
+class Log(BaseModel):
+    log: str
+
+'''    
+Upload an image
+'''
 @app.post('/upload/{image_id}')
-async def upload(file: UploadFile, image_id: int):
-    filename = file.filename
+async def upload(file: UploadFile, image_id: str):
     content = await file.read()
-    image_id = str(image_id) + '.jpg'
-    with open(os.path.join(FOLDER_DIR, image_id), 'wb') as f:
+    
+    FOLDER = FOLDER_DIR + f'{image_id}'
+    file_name = 'image.jpg'
+    if not os.path.isdir(FOLDER):
+        os.mkdir(FOLDER)
+    path = os.path.join(FOLDER, file_name)
+    with open(path, 'wb') as f:
         f.write(content)
+    f.close()
     result = 'File is saved in ' + FOLDER_DIR + image_id
     return result
 
-# Execute the model
-@app.post('/predict/{image_id}')
+'''
+Implement Model
+'''
+@app.post('/predict/{image_id}_{prompts}')
 def predict(image_id: str, prompts: str):
     model = CLIPDensePredT(version='ViT-B/32', reduce_dim=64).cuda()
-    model.eval();
+    model.eval()
 
     model.load_state_dict(torch.load('weights/rd64-uni-refined.pth', map_location=torch.device('cpu')), strict=False);
     
-    path = os.path.join(FOLDER_DIR, image_id + '.jpg')
+    FOLDER = FOLDER_DIR + f'{image_id}'
+    if not os.path.isdir(FOLDER):
+        os.mkdir(FOLDER)
+    path = os.path.join(FOLDER, 'image.jpg')
     preds = prediction(path, prompts, model).cpu()
     output = visualize_segmentation(preds)
-    
+    file_name = 'predict.jpg'
+    path = os.path.join(FOLDER, file_name)
     plt.figure(figsize=(10, 10))
     plt.axis('off')
     plt.imshow(output)
-    plt.savefig(f'predicts/{image_id}.jpg')
+    plt.savefig(path)
     
-    return FileResponse(f'predicts/{image_id}.jpg')
-    
-#Download the result
-@app.get('/download/{image_id}')
-def predict(image_id: str):
-    path = os.path.join(PREDICT_DIR, image_id + '.jpg')
     return FileResponse(path)
+'''    
+Download the result
+'''
+@app.get('/download/{image_id}')
+def download(image_id: str):
+    FOLDER = FOLDER_DIR + f'{image_id}'
+    file_name = 'predict.jpg'
+    path = os.path.join(FOLDER, file_name)
+    return FileResponse(path)
+
+'''    
+Send Feedback
+'''
+@app.post('/log/{image_id}')
+def log(image_id: str, log: Log):
+    FOLDER = FOLDER_DIR + f'{image_id}'
+    file_name = 'log.txt'
+    path = os.path.join(FOLDER, file_name)
+    with open(path, 'w') as f:
+        f.write(log.log)
