@@ -1,4 +1,5 @@
 import streamlit as st
+import torch
 from PIL import Image, ImageDraw
 from streamlit_image_coordinates import streamlit_image_coordinates
 
@@ -16,6 +17,17 @@ def label_input1():
         st.text(user_input)
 
 
+def get_ellipse_coords(point: tuple[int, int]) -> tuple[int, int, int, int]:
+            center = point
+            radius = 8
+            return (
+                center[0] - radius,
+                center[1] - radius,
+                center[0] + radius,
+                center[1] + radius,
+            )
+
+
 
 def show_demo_page():
     st.header("DEMO")
@@ -27,20 +39,10 @@ def show_demo_page():
     if img_file is not None:
         image = Image.open(img_file)
 
-        st.image(image)
+        st.image(image, width=600)
 
         if "points" not in st.session_state:
             st.session_state["points"] = []
-
-        def get_ellipse_coords(point: tuple[int, int]) -> tuple[int, int, int, int]:
-            center = point
-            radius = 8
-            return (
-                center[0] - radius,
-                center[1] - radius,
-                center[0] + radius,
-                center[1] + radius,
-            )
         
         draw = ImageDraw.Draw(image)
 
@@ -48,13 +50,14 @@ def show_demo_page():
             coords = get_ellipse_coords(point)
             draw.ellipse(coords, fill="red")
 
-        value = streamlit_image_coordinates(image, width=500)
+
+        value = streamlit_image_coordinates(image, width=600)
 
         if value is not None:
-            point = value["x"], value["y"]
+            point = value["x"] * (float(image.size[0]) / 600), (value["y"] * (image.size[0]/600))
 
+            st.text(point)
             if point not in st.session_state["points"]:
                 st.session_state["points"].append(point)
                 st.experimental_rerun()
 
-        st.write(value)
