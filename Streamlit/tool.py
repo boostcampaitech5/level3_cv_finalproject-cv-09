@@ -2,6 +2,7 @@ import streamlit as st
 import zipfile
 import os
 import shutil
+import requests
 from PIL import Image, ImageDraw
 from streamlit_image_coordinates import streamlit_image_coordinates
 
