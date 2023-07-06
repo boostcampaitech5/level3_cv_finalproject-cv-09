@@ -58,7 +58,10 @@ async def upload(system: str, files: UploadFile = File(...)):
         f.write(content)
     f.close()
     with zipfile.ZipFile(f'/opt/ml/level3_cv_finalproject-cv-09/FastAPI/data/{system}/test.zip', "r") as zip_ref:
-        zip_ref.extractall(f"data/{system}")
+        if system == 'mac':
+            zip_ref.extractall(f"data/{system}")
+        else :
+            zip_ref.extractall(f"data/{system}/test")
     if system == 'mac':
         dummy = FOLDER + '/__MACOSX'
         if os.path.isdir(dummy):
