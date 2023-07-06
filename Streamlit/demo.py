@@ -4,13 +4,12 @@ import os
 import shutil
 from PIL import Image, ImageDraw
 from streamlit_image_coordinates import streamlit_image_coordinates
-
+from msam import wrapper_msam
 
 
 def is_folder_empty(folder_path):
     file_list = os.listdir(folder_path)
     return len(file_list) == 0
-
 
 
 def label_input1():
@@ -65,6 +64,8 @@ def main():
         image = Image.open(img_file)
 
         st.image(image)
+        # 여기서 모델 돌아가면 됨.
+        fig, mask = wrapper_msam(image)
 
         if "points" not in st.session_state:
             st.session_state["points"] = []
@@ -81,21 +82,23 @@ def main():
 
 
         with st.echo("below"):
-            with Image.open(img_file) as img:
-                draw = ImageDraw.Draw(img)
+            
+            draw = ImageDraw.Draw(image)
 
-                for point in st.session_state["points"]:
-                    coords = get_ellipse_coords(point)
-                    draw.ellipse(coords, fill="red")
+            # st.session_state["points"]에 있는 포인트 좌표에 점 그리는 부분 
+            for point in st.session_state["points"]:
+                coords = get_ellipse_coords(point) # 
+                draw.ellipse(coords, fill="red")
 
-                value = streamlit_image_coordinates(img, key="pil")
+            # 
+            value = streamlit_image_coordinates(image, key="pil")
 
-                if value is not None:
-                    point = value["x"], value["y"]
+            if value is not None:
+                point = value["x"], value["y"]
 
-                    if point not in st.session_state["points"]:
-                        st.session_state["points"].append(point)
-                        st.experimental_rerun()
+                if point not in st.session_state["points"]:
+                    st.session_state["points"].append(point)
+                    st.experimental_rerun()
 
         st.write(value)
             
