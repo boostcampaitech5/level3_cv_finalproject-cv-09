@@ -4,7 +4,8 @@ import numpy as np
 import torch
 from PIL import Image
 from mobile_sam import sam_model_registry
-
+from mobile_sam import SamAutomaticMaskGenerator
+import numpy as np 
 def fast_show_mask_gpu(
     annotation,
     ax,
@@ -96,15 +97,15 @@ def fast_process(
     #image.paste(overlay_inner, (0, 0), overlay_inner)
     return image, overlay_inner
 
-def wrapper_msam(image):
-    input_size = 1024
+def wrapper_msam(image, size):
+    input_size = size
     w, h = image.size
     scale = input_size / max(w, h)
     new_w = int(w * scale)
     new_h = int(h * scale)
     image = image.resize((new_w, new_h))
 
-    from mobile_sam import sam_model_registry
+    
     model_type = "vit_t"
     sam_checkpoint = "./weights/mobile_sam.pt"
 
@@ -114,8 +115,7 @@ def wrapper_msam(image):
     mobile_sam.to(device=device)
     mobile_sam.eval()
 
-    from mobile_sam import SamAutomaticMaskGenerator
-    import numpy as np 
+    
 
     mask_generator = SamAutomaticMaskGenerator(mobile_sam)
     masks = mask_generator.generate(np.array(image))
@@ -124,7 +124,7 @@ def wrapper_msam(image):
         annotations=masks,
         image=image,
         device=device,
-        scale=(1024),
+        scale=(size),
         mask_random_color=True,
         bbox=None,
         withContours=True,
