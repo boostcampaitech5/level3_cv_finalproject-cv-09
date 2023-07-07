@@ -1,20 +1,20 @@
-from typing import Union
 import os
-from fastapi import FastAPI, UploadFile
+import torch
+import zipfile
+import shutil
+import matplotlib.pyplot as plt
+from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from PIL import Image
-import torch
 from torchvision import transforms
 from models.clip_seg import CLIPDensePredT
-import matplotlib.pyplot as plt
 from pydantic import BaseModel
 
-IMG_DIR = '/opt/level3_cv_finalproject-cv-09/images/N-B-P-021_000109.jpg'
 FOLDER_DIR = '/opt/ml/level3_cv_finalproject-cv-09/FastAPI/data/'
 
 app = FastAPI()
-
+    
 def prediction(path, prompts, model):
     transform = transforms.Compose([
         transforms.ToTensor(),
@@ -48,20 +48,24 @@ class Log(BaseModel):
 '''    
 Upload an image
 '''
-@app.post('/upload/{image_id}')
-async def upload(file: UploadFile, image_id: str):
-    content = await file.read()
-    
-    FOLDER = FOLDER_DIR + f'{image_id}'
-    file_name = 'image.jpg'
+@app.post('/upload/{system}')
+async def upload(system: str, files: UploadFile = File(...)):
+    content = await files.read()
+    FOLDER = FOLDER_DIR + system
     if not os.path.isdir(FOLDER):
         os.mkdir(FOLDER)
-    path = os.path.join(FOLDER, file_name)
-    with open(path, 'wb') as f:
+    with open(f'{FOLDER}/test.zip', 'wb') as f:
         f.write(content)
     f.close()
-    result = 'File is saved in ' + FOLDER_DIR + image_id
-    return result
+    with zipfile.ZipFile(f'/opt/ml/level3_cv_finalproject-cv-09/FastAPI/data/{system}/test.zip', "r") as zip_ref:
+        if system == 'mac':
+            zip_ref.extractall(f"data/{system}")
+        else :
+            zip_ref.extractall(f"data/{system}/test")
+    if system == 'mac':
+        dummy = FOLDER + '/__MACOSX'
+        if os.path.isdir(dummy):
+            shutil.rmtree(dummy)
 
 '''
 Implement Model

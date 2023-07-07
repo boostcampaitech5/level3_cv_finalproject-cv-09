@@ -2,6 +2,7 @@ import streamlit as st
 import torch
 from PIL import Image, ImageDraw
 from streamlit_image_coordinates import streamlit_image_coordinates
+from typing import Tuple
 from msam import wrapper_msam
 
 
@@ -17,7 +18,7 @@ def label_input1():
         st.text(user_input)
 
 
-def get_ellipse_coords(point: tuple[int, int]) -> tuple[int, int, int, int]:
+def get_ellipse_coords(point: Tuple[int, int]) -> Tuple[int, int, int, int]:
             center = point
             radius = 8
             return (
