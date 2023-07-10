@@ -1,42 +1,64 @@
-This is README file to use FastAPI
+부스트캠프 5기 CV-09 최종 프로젝트 FastAPI README 입니다.
 
-Before read this instruction, you have to enter following command in terminal to import some packages :
+README를 읽기 전에, 터미널에 다음 명령어를 입력하여 필요한 패키지를 설치하세요 :
 
 $pip install uvicorn
 $pip install fastapi
+$pip install pydantic
+$pip install torchvision
 
-- To Execute
+- 실행
 
-Run following command in terminal :
-uvicorn main:app --reload
-
-Now your brief server is on!
+터미널에 다음 명령어를 입력하여 실행하세요 :
+uvicorn main:app --port{port_number} --reload
 
 - APIs
 
-There are three APIs.
+현재 4개의 API를 제공하고 있습니다.
+upload API는 정상적으로 동작합니다.
+predict, download, feedback API는 정상적으로 동작하지 않습니다.
+
+* 구현 예정 기능
+- 로그인과 유사한 API를 제공하여 특정 유저가 다른 유저의 데이터에 접근할 수 없도록 합니다.
 
 1. upload
-This API offers upload function.
-If it runs properly, result will be following :
-'File is saved in {Image_Dir}'
+업로드 기능을 제공하는 API입니다.
+zip 파일을 입력값으로 받아 지정된 경로에 zip 파일, 압축을 해제한 파일을 저장합니다.
+
+* 수정 예정
+- 유저에 따라 파일 업로드 경로를 차별화합니다.
 
 2. predict
-This API offer predict function.
-Predict is implemented by using CLIPSEG.
-If is runs properly, a jpg file will be returned.
-Also, the output will be saved in following path, using {image_id} :
-'/opt/ml/level3_cv_finalproject-cv-09/FastAPI/predicts'
+예측 기능을 제공하는 API입니다.
+사용자로부터 image_id, prompts를 입력값으로 받아 CLIPSEG를 이용하여 객체를 Segment하고, 결과를 저장합니다.
 
-Predict API will be removed soon since it is implemented not by communicating with client, but by using server.
+* 에러
+- 출력이 정상적이지 않습니다.
+- 현재 비활성화된 기능입니다.
 
-* Error
-- Output image is very noisy
+* 수정 예정
+- 프롬프트를 request body로 이동시킵니다.
+- image_id 인자를 제외합니다.
+- 유저 식별 기능을 구현하여 image_id 인자를 대신합니다.
+- 이미지 출력을 정상화합니다.
 
 3. download
-This API offer download function.
-You can download an image by using image id, used in upload session.
+다운로드 기능을 제공하는 API입니다.
+image_id를 입력값으로 받아 예측이 완료된 이미지를 반환합니다.
+
+* 에러
+- 현재 비활성화된 기능입니다.
+
+* 수정 예정
+- image_id 인자를 제외합니다.
+- 유저 식별 기능을 구현하여 image_id 인자를 대신합니다.
 
 4. feedback
-This API offer feedback function.
-It is possible to send review or feedback about the annotation result using the API.
+피드백 기능을 제공하는 API입니다.
+image_id를 입력값으로 받아 유저의 피드백을 저장합니다.
+
+* 에러
+- 현재 비활성화된 기능입니다.
+
+* 수정 예정
+- 유저 식별 기능을 구현하여 image_id 인자를 대신합니다.
