@@ -40,13 +40,8 @@ colors = [
 
 
 def zip_to_json(file_obj):
-    #
-    # f = ZipFile(file_obj.name, "r")
-    # with ZipFile(file_obj.name) as zfile:
-    #     files = {"files": zfile}
     with open(file_obj.name, "rb") as f:
         files = {"files": f}
-
         res = requests.post("http://115.85.182.123:30008/zip_upload/", files=files)
 
     return res.status_code
