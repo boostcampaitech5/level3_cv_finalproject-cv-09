@@ -6,10 +6,6 @@ from utils.tools_gradio import fast_process
 
 from PIL import Image
 from zipfile import ZipFile
-
-# clipSeg 관련 import
-from transformers import CLIPSegProcessor, CLIPSegForImageSegmentation
-import cv2
 import requests
 
 colors = [
@@ -39,11 +35,18 @@ colors = [
 #     return files
 
 
-def zip_to_json(file_obj):
+
+def zip_to_json(file_obj, id):
+    #
+    # f = ZipFile(file_obj.name, "r")
+    # with ZipFile(file_obj.name) as zfile:
+    #     files = {"files": zfile}
     with open(file_obj.name, "rb") as f:
         files = {"files": f}
-        res = requests.post("http://115.85.182.123:30008/zip_upload/", files=files)
-
+        data = {"data": id}
+        res = requests.post(
+            "http://115.85.182.123:30008/zip_upload/", files=files, data=data
+        )
     return res.status_code
 
 
@@ -59,10 +62,6 @@ mobile_sam.eval()
 
 mask_generator = SamAutomaticMaskGenerator(mobile_sam)
 predictor = SamPredictor(mobile_sam)
-
-# clip_seg load code
-processor = CLIPSegProcessor.from_pretrained("CIDAS/clipseg-rd64-refined")
-model = CLIPSegForImageSegmentation.from_pretrained("CIDAS/clipseg-rd64-refined")
 
 # Description
 title = "<center><strong><font size='8'>Faster Segment Anything(MobileSAM)<font></strong></center>"
@@ -129,41 +128,9 @@ def get_points(image, evt: gr.SelectData):
     return x, y, pixels[x, y]
 
 
-@torch.no_grad()
-def clip_segmentation(image, label_list):
-    inputs = processor(
-        text=label_list,
-        images=[image] * len(label_list),
-        padding="max_length",
-        return_tensors="pt",
-    )
-    outputs = model(**inputs)
-
-    preds = outputs.logits.unsqueeze(1).cpu()
-    flat_preds = torch.sigmoid(preds.squeeze()).reshape((preds.shape[0], -1))
-    flat_preds_with_treshold = torch.full(
-        (preds.shape[0] + 1, flat_preds.shape[-1]), 0.5
-    )  # threshold 변경 필요
-    flat_preds_with_treshold[1 : preds.shape[0] + 1, :] = flat_preds
-    inds = torch.topk(flat_preds_with_treshold, 1, dim=0).indices
-
-    temp_list = []
-    for i in inds.squeeze():
-        temp_list.append(colors[i])
-    image = cv2.resize(np.array(image), (preds.shape[-2], preds.shape[-1]))
-    output = (
-        np.array(temp_list)
-        .T.reshape(3, preds.shape[-2], preds.shape[-1])
-        .transpose(1, 2, 0)
-        * 255
-    )
-    blended = cv2.addWeighted(image, 0.5, output, 0.5, 0, dtype=cv2.CV_8UC3)
-    return np.clip(blended, 0, 255)
-
-
 cond_img_e = gr.Image(label="Input", value=default_example[0], type="pil")
 segm_img_e = gr.Image(label="Mobile SAM Image", interactive=False, type="pil")
-
+id = gr.Textbox()
 clipseg_img_e = gr.Image(
     label="Clip_Segmentation Image", interactive=True, image_mode="RGBA"
 )
@@ -182,8 +149,8 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
         with gr.Column(scale=1):
             # Title
             gr.Markdown(title)
-    with gr.Tab("Tab test"):
-        gr.Interface(zip_to_json, "file", "text")
+    with gr.Tab("file upload Tab"):
+        gr.Interface(zip_to_json, inputs=["file", id], outputs="text")
         label_list = gr.Textbox(interactive=True)
     with gr.Tab("Everything mode"):
         # Images
@@ -222,9 +189,9 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
         outputs=[segm_img_e],
     )
     segm_img_e.select(get_points, inputs=[segm_img_e], outputs=[coord_value])
-    clipseg_btn_e.click(
-        clip_segmentation, inputs=[cond_img_e, label_checkbox], outputs=[clipseg_img_e]
-    )
+    # clipseg_btn_e.click(
+    #     clip_segmentation, inputs=[cond_img_e, label_checkbox], outputs=[clipseg_img_e]
+    # )
     label_list.change(
         fn=lambda value: label_checkbox.update(
             choices=value.replace(", ", ",").split(",")
