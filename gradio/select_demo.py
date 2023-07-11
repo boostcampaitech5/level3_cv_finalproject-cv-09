@@ -118,7 +118,7 @@ def get_points(image, evt: gr.SelectData):
 
 
 @torch.no_grad()
-def clip_segmentation(label_list, image):
+def clip_segmentation(image, label_list):
     label_list = label_list.replace(", ", ",").split(",")
 
     inputs = processor(
@@ -150,13 +150,10 @@ def clip_segmentation(label_list, image):
 
 
 cond_img_e = gr.Image(label="Input", value=default_example[0], type="pil")
-segm_img_e = gr.Image(label="Segmented Image", interactive=False, type="pil")
+segm_img_e = gr.Image(label="Mobile SAM Image", interactive=False, type="pil")
 
-modified_img_e = gr.Image(
-    label="Modified Image", interactive=True, type="pil", image_mode="RGBA"
-)
-mask_img_e = gr.Image(
-    label="mask Image", interactive=False, type="pil", image_mode="RGBA"
+clipseg_img_e = gr.Image(
+    label="Clip_Segmentation Image", interactive=True, image_mode="RGBA"
 )
 
 input_size_slider = gr.components.Slider(
@@ -175,18 +172,22 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
             gr.Markdown(title)
     with gr.Tab("Tab test"):
         gr.Interface(zip_to_json, "file", "text")
-        label_list = gr.TextArea(
-            "input label list(seperated ',')", variant="primary", interactive=True
-        )
+        label_list = gr.Textbox(interactive=True)
     with gr.Tab("Everything mode"):
         # Images
+        cond_img_e.render()
         with gr.Row(variant="panel"):
-            with gr.Column(scale=2):
-                cond_img_e.render()
             with gr.Column(scale=1):
                 input_size_slider.render()
                 segment_btn_e = gr.Button("Segment Everything", variant="primary")
-
+            with gr.Column(scale=1):
+                label_checkbox = gr.CheckboxGroup(
+                    choices=[],
+                    value=["swam", "slept"],
+                    label="select label in present image",
+                    interactive=True,
+                )
+                clipseg_btn_e = gr.Button("clip_segmentation", variant="primary")
         # Submit & Clear
         with gr.Row():
             with gr.Column(scale=1):
@@ -195,25 +196,10 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
                     add_btn_e = gr.Button("add", variant="secondary")
                     delete_btn_e = gr.Button("delete", variant="secondary")
 
-                # gr.Markdown("Try some of the examples below ⬇️")
-                # gr.Examples(
-                #     examples=examples,
-                #     inputs=[cond_img_e],
-                #     outputs=segm_img_e,
-                #     fn=segment_everything,
-                #     cache_examples=True,
-                #     examples_per_page=4,
-                # )
-
             with gr.Column():
-                modified_img_e.render()
+                clipseg_img_e.render()
         with gr.Row():
             coord_value = gr.Textbox()
-    # with gr.Row():
-    #    with gr.Column(scale=1):
-    #        mask_img_e.render()
-    #    with gr.Column(scale=1):
-    #        t_box = gr.Textbox(interactive=False)
 
     segment_btn_e.click(
         segment_everything,
@@ -223,15 +209,17 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
         ],
         outputs=[segm_img_e],
     )
-
-    def clear():
-        return None, None
-
-    def clear_text():
-        return None, None, None
-
-    # clear_btn_e.click(clear, outputs=[cond_img_e, segm_img_e])
     segm_img_e.select(get_points, inputs=[segm_img_e], outputs=[coord_value])
+    clipseg_btn_e.click(
+        clip_segmentation, inputs=[cond_img_e, label_list], outputs=[clipseg_img_e]
+    )
+    label_list.change(
+        fn=lambda value: label_checkbox.update(
+            choices=value.replace(", ", ",").split(",")
+        ),
+        inputs=label_list,
+        outputs=label_checkbox,
+    )
 demo.queue()
 demo.launch()
 
@@ -239,5 +227,4 @@ demo.launch()
 이미지를 원본이랑 마스크로 분리, 
 modified_img_e 이미지 select 될때 마우스 좌표를 
 마스크 이미지에 적용, 해당 픽셀의 값 반환 
-
 """
