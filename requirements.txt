@@ -6,3 +6,4 @@ opencv-python
 numpy
 scipy
 streamlit-image-coordinates
+mlflow
