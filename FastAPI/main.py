@@ -14,8 +14,16 @@ from pydantic import BaseModel
 FOLDER_DIR = '/opt/ml/level3_cv_finalproject-cv-09/FastAPI/data/'
 
 app = FastAPI()
+
+"""
+멘토님의 작품
+"""
+# @app.on_event('start_up')
+# def startup_event():
+#     app.state.model = Asdf
     
 def prediction(path, prompts, model):
+    prompt = list(prompts.split(','))
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
@@ -25,8 +33,8 @@ def prediction(path, prompts, model):
     img = transform(image).unsqueeze(0)
     
     with torch.no_grad():
-        repeat_num = len(prompts)
-        preds = model(img.repeat(repeat_num,1,1,1).cuda(), prompts)[0]
+        repeat_num = len(prompt)
+        preds = model(img.repeat(repeat_num,1,1,1).cuda(), prompt)[0]
 
     return preds
 
@@ -70,9 +78,9 @@ async def upload(system: str, files: UploadFile = File(...)):
 '''
 Implement Model
 '''
-@app.post('/predict/{image_id}_{prompts}')
+@app.post('/predict/{image_id}/{prompts}')
 def predict(image_id: str, prompts: str):
-    model = CLIPDensePredT(version='ViT-B/32', reduce_dim=64).cuda()
+    model = CLIPDensePredT(version='ViT-B/16', reduce_dim=64, complex_trans_conv=True).cpu()
     model.eval()
 
     model.load_state_dict(torch.load('weights/rd64-uni-refined.pth', map_location=torch.device('cpu')), strict=False);
@@ -83,6 +91,10 @@ def predict(image_id: str, prompts: str):
     path = os.path.join(FOLDER, 'image.jpg')
     preds = prediction(path, prompts, model).cpu()
     output = visualize_segmentation(preds)
+    print(output)
+    pil_t = transforms.ToPILImage()
+    output_pil = pil_t(output)
+    print(output_pil.type)
     file_name = 'predict.jpg'
     path = os.path.join(FOLDER, file_name)
     plt.figure(figsize=(10, 10))
@@ -91,6 +103,18 @@ def predict(image_id: str, prompts: str):
     plt.savefig(path)
     
     return FileResponse(path)
+
+# create table user_requests 
+# (
+#     task_id sequence 1,2,3,4
+#     user_id  ~
+#     img_file_path # s3, minio같은 경로
+#     original_annotation json not null
+#     updated_annotation json nullable
+#     created_at
+#     updated_at
+    
+# )
 '''    
 Download the result
 '''

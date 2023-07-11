@@ -3,4 +3,6 @@ practice
 __pycache__
 images_win
 images_mac
+clipseg/third_party/PhraseCutDataset/data/
 .vscode
+*/nohup.out
