@@ -4,3 +4,4 @@ __pycache__
 images_win
 images_mac
 .vscode
+*.ipynb
