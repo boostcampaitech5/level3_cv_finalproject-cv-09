@@ -1,0 +1,8 @@
+torch
+torchvision
+streamlit 
+matplotlib
+opencv-python 
+numpy
+scipy
+streamlit-image-coordinates
