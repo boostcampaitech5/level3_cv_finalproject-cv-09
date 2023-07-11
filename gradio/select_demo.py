@@ -9,6 +9,8 @@ from zipfile import ZipFile
 
 # clipSeg 관련 import
 from transformers import CLIPSegProcessor, CLIPSegForImageSegmentation
+import cv2
+import requests
 
 colors = [
     (0, 0, 0),
@@ -25,14 +27,29 @@ colors = [
 ]
 
 
+# def zip_to_json(file_obj):
+#     files = []
+#     print(file_obj.name)
+#     with ZipFile(file_obj.name) as zfile:
+#         for zinfo in zfile.infolist():
+#             files.append(
+#                 zinfo.filename,
+#             )
+#         print(zfile)
+#     return files
+
+
 def zip_to_json(file_obj):
-    files = []
-    with ZipFile(file_obj.name) as zfile:
-        for zinfo in zfile.infolist():
-            files.append(
-                zinfo.filename,
-            )
-    return files
+    #
+    # f = ZipFile(file_obj.name, "r")
+    # with ZipFile(file_obj.name) as zfile:
+    #     files = {"files": zfile}
+    with open(file_obj.name, "rb") as f:
+        files = {"files": f}
+
+        res = requests.post("http://115.85.182.123:30008/zip_upload/", files=files)
+
+    return res.status_code
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -119,8 +136,6 @@ def get_points(image, evt: gr.SelectData):
 
 @torch.no_grad()
 def clip_segmentation(image, label_list):
-    label_list = label_list.replace(", ", ",").split(",")
-
     inputs = processor(
         text=label_list,
         images=[image] * len(label_list),
@@ -140,13 +155,15 @@ def clip_segmentation(image, label_list):
     temp_list = []
     for i in inds.squeeze():
         temp_list.append(colors[i])
+    image = cv2.resize(np.array(image), (preds.shape[-2], preds.shape[-1]))
     output = (
         np.array(temp_list)
         .T.reshape(3, preds.shape[-2], preds.shape[-1])
         .transpose(1, 2, 0)
         * 255
     )
-    return output
+    blended = cv2.addWeighted(image, 0.5, output, 0.5, 0, dtype=cv2.CV_8UC3)
+    return np.clip(blended, 0, 255)
 
 
 cond_img_e = gr.Image(label="Input", value=default_example[0], type="pil")
@@ -211,7 +228,7 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
     )
     segm_img_e.select(get_points, inputs=[segm_img_e], outputs=[coord_value])
     clipseg_btn_e.click(
-        clip_segmentation, inputs=[cond_img_e, label_list], outputs=[clipseg_img_e]
+        clip_segmentation, inputs=[cond_img_e, label_checkbox], outputs=[clipseg_img_e]
     )
     label_list.change(
         fn=lambda value: label_checkbox.update(
