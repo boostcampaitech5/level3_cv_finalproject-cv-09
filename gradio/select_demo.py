@@ -10,6 +10,7 @@ from zipfile import ZipFile
 # clipSeg 관련 import
 from transformers import CLIPSegProcessor, CLIPSegForImageSegmentation
 import cv2
+import requests
 
 colors = [
     (0, 0, 0),
@@ -26,14 +27,29 @@ colors = [
 ]
 
 
+# def zip_to_json(file_obj):
+#     files = []
+#     print(file_obj.name)
+#     with ZipFile(file_obj.name) as zfile:
+#         for zinfo in zfile.infolist():
+#             files.append(
+#                 zinfo.filename,
+#             )
+#         print(zfile)
+#     return files
+
+
 def zip_to_json(file_obj):
-    files = []
-    with ZipFile(file_obj.name) as zfile:
-        for zinfo in zfile.infolist():
-            files.append(
-                zinfo.filename,
-            )
-    return files
+    #
+    # f = ZipFile(file_obj.name, "r")
+    # with ZipFile(file_obj.name) as zfile:
+    #     files = {"files": zfile}
+    with open(file_obj.name, "rb") as f:
+        files = {"files": f}
+
+        res = requests.post("http://115.85.182.123:30008/zip_upload/", files=files)
+
+    return res.status_code
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
