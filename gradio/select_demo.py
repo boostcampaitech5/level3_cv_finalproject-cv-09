@@ -35,6 +35,7 @@ colors = [
 #     return files
 
 
+
 def zip_to_json(file_obj, id):
     #
     # f = ZipFile(file_obj.name, "r")
@@ -46,7 +47,6 @@ def zip_to_json(file_obj, id):
         res = requests.post(
             "http://115.85.182.123:30008/zip_upload/", files=files, data=data
         )
-
     return res.status_code
 
 
