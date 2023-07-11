@@ -55,9 +55,17 @@ def download_images(splits):
 
     to_download = dict()
     info = json.load(open(img_info_fpath))
+    images_path = "data/VGPhraseCut_v0/images"
     for img in info:
         if img['split'] in splits:
-            to_download['%d.jpg' % img['image_id']] = img['url']
+            img_name = '%d.jpg' % img['image_id']
+            img_path = os.path.join(images_path, img_name)
+            print(img_path)
+            if os.path.exists(img_path):
+                print(f"File '{img_name}' already exists at '{images_path}'.")
+            else:
+                print(f"No Existss {img_name}")
+                to_download[img_name] = img['url']
     print('%d imgs to be downloaded. This may take some time.' % len(to_download))
     c = 0
     for fname, url in to_download.items():
@@ -67,7 +75,6 @@ def download_images(splits):
         if c % d == 0:
             print('downloaded %d / %d images' % (c, len(to_download)))
     print('Finished downloading images.')
-
 
 def main():
     parser = argparse.ArgumentParser()

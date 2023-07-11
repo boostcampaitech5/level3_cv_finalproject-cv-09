@@ -1,44 +1,169 @@
 Downloading...
 From: https://drive.google.com/uc?id=1QbunEpB0l6PXCTVR5L7YsJM7-eNoKjHM
 To: /opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/data/VGPhraseCut_v0/name_att_rel_count.json
-  0%|          | 0.00/348k [00:00<?, ?B/s]100%|██████████| 348k/348k [00:00<00:00, 1.78MB/s]100%|██████████| 348k/348k [00:00<00:00, 1.78MB/s]
+
+  0%|          | 0.00/348k [00:00<?, ?B/s]
+100%|██████████| 348k/348k [00:00<00:00, 1.78MB/s]
+100%|██████████| 348k/348k [00:00<00:00, 1.78MB/s]
 Downloading...
 From: https://drive.google.com/uc?id=1UmjLJx9BGE9ruOXK1T4iGCYKurY0jNOL
 To: /opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/data/VGPhraseCut_v0/image_data_split.json
-  0%|          | 0.00/15.9M [00:00<?, ?B/s]  3%|▎         | 524k/15.9M [00:00<00:05, 3.02MB/s] 26%|██▋       | 4.19M/15.9M [00:00<00:00, 17.8MB/s] 69%|██████▉   | 11.0M/15.9M [00:00<00:00, 22.9MB/s]100%|██████████| 15.9M/15.9M [00:00<00:00, 27.2MB/s]
+
+  0%|          | 0.00/15.9M [00:00<?, ?B/s]
+  3%|▎         | 524k/15.9M [00:00<00:05, 3.02MB/s]
+ 26%|██▋       | 4.19M/15.9M [00:00<00:00, 17.8MB/s]
+ 69%|██████▉   | 11.0M/15.9M [00:00<00:00, 22.9MB/s]
+100%|██████████| 15.9M/15.9M [00:00<00:00, 27.2MB/s]
 Downloading...
 From (uriginal): https://drive.google.com/uc?id=1VCFRajJ4YXPmW5SJg6lS0uKaVAysO61F
 From (redirected): https://drive.google.com/uc?id=1VCFRajJ4YXPmW5SJg6lS0uKaVAysO61F&confirm=t&uuid=771890fe-ae51-4554-942c-566110524deb
 To: /opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/data/VGPhraseCut_v0/refer_train.json
-  0%|          | 0.00/344M [00:00<?, ?B/s]  0%|          | 524k/344M [00:00<02:22, 2.40MB/s]  1%|          | 3.67M/344M [00:00<00:29, 11.7MB/s]  3%|▎         | 8.91M/344M [00:00<00:17, 18.9MB/s]  3%|▎         | 11.0M/344M [00:00<00:23, 14.3MB/s]  4%|▍         | 13.6M/344M [00:01<00:25, 13.1MB/s]  5%|▌         | 18.9M/344M [00:01<00:22, 14.4MB/s]  6%|▌         | 21.0M/344M [00:01<00:25, 12.6MB/s]  8%|▊         | 27.3M/344M [00:01<00:18, 17.3MB/s]  9%|▊         | 29.4M/344M [00:02<00:21, 14.5MB/s] 11%|█         | 36.2M/344M [00:02<00:17, 17.6MB/s] 12%|█▏        | 42.5M/344M [00:02<00:13, 22.5MB/s] 13%|█▎        | 45.1M/344M [00:02<00:17, 16.9MB/s] 15%|█▍        | 50.9M/344M [00:03<00:20, 14.3MB/s] 17%|█▋        | 59.2M/344M [00:03<00:15, 17.9MB/s] 20%|█▉        | 67.6M/344M [00:04<00:15, 17.5MB/s] 22%|██▏       | 76.0M/344M [00:04<00:13, 20.1MB/s] 25%|██▍       | 84.4M/344M [00:04<00:11, 22.0MB/s] 27%|██▋       | 92.8M/344M [00:05<00:10, 23.7MB/s] 29%|██▉       | 101M/344M [00:05<00:10, 24.1MB/s]  32%|███▏      | 110M/344M [00:05<00:10, 22.6MB/s] 34%|███▍      | 118M/344M [00:06<00:09, 23.2MB/s] 37%|███▋      | 126M/344M [00:06<00:08, 24.6MB/s] 39%|███▉      | 135M/344M [00:06<00:09, 21.6MB/s] 42%|████▏     | 143M/344M [00:07<00:09, 21.1MB/s] 44%|████▍     | 152M/344M [00:07<00:08, 22.6MB/s] 46%|████▋     | 160M/344M [00:07<00:07, 24.7MB/s] 49%|████▉     | 168M/344M [00:08<00:07, 23.1MB/s] 51%|█████▏    | 177M/344M [00:08<00:06, 26.8MB/s] 54%|█████▍    | 185M/344M [00:08<00:05, 29.3MB/s] 56%|█████▌    | 193M/344M [00:09<00:04, 30.8MB/s] 59%|█████▊    | 202M/344M [00:09<00:04, 33.6MB/s] 61%|██████    | 210M/344M [00:09<00:04, 27.1MB/s] 64%|██████▎   | 219M/344M [00:09<00:04, 30.4MB/s] 66%|██████▌   | 227M/344M [00:10<00:03, 30.6MB/s] 68%|██████▊   | 235M/344M [00:10<00:03, 33.4MB/s] 71%|███████   | 244M/344M [00:10<00:02, 35.0MB/s] 73%|███████▎  | 252M/344M [00:10<00:02, 35.7MB/s] 76%|███████▌  | 261M/344M [00:11<00:02, 34.8MB/s] 78%|███████▊  | 269M/344M [00:11<00:02, 36.1MB/s] 81%|████████  | 277M/344M [00:11<00:01, 36.6MB/s] 83%|████████▎ | 286M/344M [00:11<00:01, 38.9MB/s] 85%|████████▌ | 294M/344M [00:11<00:01, 39.1MB/s] 88%|████████▊ | 303M/344M [00:12<00:01, 39.9MB/s] 90%|█████████ | 311M/344M [00:12<00:00, 39.2MB/s] 93%|█████████▎| 319M/344M [00:12<00:00, 40.7MB/s] 95%|█████████▌| 328M/344M [00:12<00:00, 35.1MB/s] 98%|█████████▊| 336M/344M [00:12<00:00, 37.2MB/s]100%|██████████| 344M/344M [00:13<00:00, 26.3MB/s]
+
+  0%|          | 0.00/344M [00:00<?, ?B/s]
+  0%|          | 524k/344M [00:00<02:22, 2.40MB/s]
+  1%|          | 3.67M/344M [00:00<00:29, 11.7MB/s]
+  3%|▎         | 8.91M/344M [00:00<00:17, 18.9MB/s]
+  3%|▎         | 11.0M/344M [00:00<00:23, 14.3MB/s]
+  4%|▍         | 13.6M/344M [00:01<00:25, 13.1MB/s]
+  5%|▌         | 18.9M/344M [00:01<00:22, 14.4MB/s]
+  6%|▌         | 21.0M/344M [00:01<00:25, 12.6MB/s]
+  8%|▊         | 27.3M/344M [00:01<00:18, 17.3MB/s]
+  9%|▊         | 29.4M/344M [00:02<00:21, 14.5MB/s]
+ 11%|█         | 36.2M/344M [00:02<00:17, 17.6MB/s]
+ 12%|█▏        | 42.5M/344M [00:02<00:13, 22.5MB/s]
+ 13%|█▎        | 45.1M/344M [00:02<00:17, 16.9MB/s]
+ 15%|█▍        | 50.9M/344M [00:03<00:20, 14.3MB/s]
+ 17%|█▋        | 59.2M/344M [00:03<00:15, 17.9MB/s]
+ 20%|█▉        | 67.6M/344M [00:04<00:15, 17.5MB/s]
+ 22%|██▏       | 76.0M/344M [00:04<00:13, 20.1MB/s]
+ 25%|██▍       | 84.4M/344M [00:04<00:11, 22.0MB/s]
+ 27%|██▋       | 92.8M/344M [00:05<00:10, 23.7MB/s]
+ 29%|██▉       | 101M/344M [00:05<00:10, 24.1MB/s] 
+ 32%|███▏      | 110M/344M [00:05<00:10, 22.6MB/s]
+ 34%|███▍      | 118M/344M [00:06<00:09, 23.2MB/s]
+ 37%|███▋      | 126M/344M [00:06<00:08, 24.6MB/s]
+ 39%|███▉      | 135M/344M [00:06<00:09, 21.6MB/s]
+ 42%|████▏     | 143M/344M [00:07<00:09, 21.1MB/s]
+ 44%|████▍     | 152M/344M [00:07<00:08, 22.6MB/s]
+ 46%|████▋     | 160M/344M [00:07<00:07, 24.7MB/s]
+ 49%|████▉     | 168M/344M [00:08<00:07, 23.1MB/s]
+ 51%|█████▏    | 177M/344M [00:08<00:06, 26.8MB/s]
+ 54%|█████▍    | 185M/344M [00:08<00:05, 29.3MB/s]
+ 56%|█████▌    | 193M/344M [00:09<00:04, 30.8MB/s]
+ 59%|█████▊    | 202M/344M [00:09<00:04, 33.6MB/s]
+ 61%|██████    | 210M/344M [00:09<00:04, 27.1MB/s]
+ 64%|██████▎   | 219M/344M [00:09<00:04, 30.4MB/s]
+ 66%|██████▌   | 227M/344M [00:10<00:03, 30.6MB/s]
+ 68%|██████▊   | 235M/344M [00:10<00:03, 33.4MB/s]
+ 71%|███████   | 244M/344M [00:10<00:02, 35.0MB/s]
+ 73%|███████▎  | 252M/344M [00:10<00:02, 35.7MB/s]
+ 76%|███████▌  | 261M/344M [00:11<00:02, 34.8MB/s]
+ 78%|███████▊  | 269M/344M [00:11<00:02, 36.1MB/s]
+ 81%|████████  | 277M/344M [00:11<00:01, 36.6MB/s]
+ 83%|████████▎ | 286M/344M [00:11<00:01, 38.9MB/s]
+ 85%|████████▌ | 294M/344M [00:11<00:01, 39.1MB/s]
+ 88%|████████▊ | 303M/344M [00:12<00:01, 39.9MB/s]
+ 90%|█████████ | 311M/344M [00:12<00:00, 39.2MB/s]
+ 93%|█████████▎| 319M/344M [00:12<00:00, 40.7MB/s]
+ 95%|█████████▌| 328M/344M [00:12<00:00, 35.1MB/s]
+ 98%|█████████▊| 336M/344M [00:12<00:00, 37.2MB/s]
+100%|██████████| 344M/344M [00:13<00:00, 26.3MB/s]
 Downloading...
 From: https://drive.google.com/uc?id=1b59w_IcfpvNfBhraSKw5RfmFHFJ4lIAb
 To: /opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/data/VGPhraseCut_v0/refer_input_train.json
-  0%|          | 0.00/53.7M [00:00<?, ?B/s]  1%|          | 524k/53.7M [00:00<01:04, 819kB/s]  2%|▏         | 1.05M/53.7M [00:00<00:34, 1.55MB/s]  4%|▍         | 2.10M/53.7M [00:00<00:16, 3.15MB/s]  7%|▋         | 3.67M/53.7M [00:00<00:08, 5.77MB/s] 12%|█▏        | 6.29M/53.7M [00:01<00:04, 10.4MB/s] 17%|█▋        | 8.91M/53.7M [00:01<00:03, 13.9MB/s] 21%|██▏       | 11.5M/53.7M [00:01<00:02, 16.4MB/s] 26%|██▋       | 14.2M/53.7M [00:01<00:02, 18.4MB/s] 31%|███       | 16.8M/53.7M [00:01<00:01, 19.9MB/s] 36%|███▌      | 19.4M/53.7M [00:01<00:02, 17.2MB/s] 40%|████      | 21.5M/53.7M [00:01<00:02, 15.5MB/s] 45%|████▍     | 24.1M/53.7M [00:02<00:01, 17.6MB/s] 50%|████▉     | 26.7M/53.7M [00:02<00:01, 19.2MB/s] 54%|█████▎    | 28.8M/53.7M [00:02<00:01, 15.6MB/s] 59%|█████▊    | 31.5M/53.7M [00:02<00:01, 17.7MB/s] 63%|██████▎   | 34.1M/53.7M [00:02<00:01, 19.2MB/s] 68%|██████▊   | 36.7M/53.7M [00:02<00:00, 18.1MB/s] 73%|███████▎  | 39.3M/53.7M [00:02<00:00, 19.7MB/s] 78%|███████▊  | 41.9M/53.7M [00:02<00:00, 20.8MB/s] 83%|████████▎ | 44.6M/53.7M [00:03<00:00, 21.6MB/s] 88%|████████▊ | 47.2M/53.7M [00:03<00:00, 20.9MB/s] 93%|█████████▎| 49.8M/53.7M [00:03<00:00, 21.7MB/s] 98%|█████████▊| 52.4M/53.7M [00:03<00:00, 22.4MB/s]100%|██████████| 53.7M/53.7M [00:03<00:00, 15.5MB/s]
+
+  0%|          | 0.00/53.7M [00:00<?, ?B/s]
+  1%|          | 524k/53.7M [00:00<01:04, 819kB/s]
+  2%|▏         | 1.05M/53.7M [00:00<00:34, 1.55MB/s]
+  4%|▍         | 2.10M/53.7M [00:00<00:16, 3.15MB/s]
+  7%|▋         | 3.67M/53.7M [00:00<00:08, 5.77MB/s]
+ 12%|█▏        | 6.29M/53.7M [00:01<00:04, 10.4MB/s]
+ 17%|█▋        | 8.91M/53.7M [00:01<00:03, 13.9MB/s]
+ 21%|██▏       | 11.5M/53.7M [00:01<00:02, 16.4MB/s]
+ 26%|██▋       | 14.2M/53.7M [00:01<00:02, 18.4MB/s]
+ 31%|███       | 16.8M/53.7M [00:01<00:01, 19.9MB/s]
+ 36%|███▌      | 19.4M/53.7M [00:01<00:02, 17.2MB/s]
+ 40%|████      | 21.5M/53.7M [00:01<00:02, 15.5MB/s]
+ 45%|████▍     | 24.1M/53.7M [00:02<00:01, 17.6MB/s]
+ 50%|████▉     | 26.7M/53.7M [00:02<00:01, 19.2MB/s]
+ 54%|█████▎    | 28.8M/53.7M [00:02<00:01, 15.6MB/s]
+ 59%|█████▊    | 31.5M/53.7M [00:02<00:01, 17.7MB/s]
+ 63%|██████▎   | 34.1M/53.7M [00:02<00:01, 19.2MB/s]
+ 68%|██████▊   | 36.7M/53.7M [00:02<00:00, 18.1MB/s]
+ 73%|███████▎  | 39.3M/53.7M [00:02<00:00, 19.7MB/s]
+ 78%|███████▊  | 41.9M/53.7M [00:02<00:00, 20.8MB/s]
+ 83%|████████▎ | 44.6M/53.7M [00:03<00:00, 21.6MB/s]
+ 88%|████████▊ | 47.2M/53.7M [00:03<00:00, 20.9MB/s]
+ 93%|█████████▎| 49.8M/53.7M [00:03<00:00, 21.7MB/s]
+ 98%|█████████▊| 52.4M/53.7M [00:03<00:00, 22.4MB/s]
+100%|██████████| 53.7M/53.7M [00:03<00:00, 15.5MB/s]
 Downloading...
 From: https://drive.google.com/uc?id=1Q2HFlss5Y2zLjTydQMWzq6u0iFsGPNnd
 To: /opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/data/VGPhraseCut_v0/refer_val.json
-  0%|          | 0.00/44.1M [00:00<?, ?B/s]  1%|          | 524k/44.1M [00:00<00:13, 3.23MB/s] 11%|█         | 4.72M/44.1M [00:00<00:03, 12.8MB/s] 24%|██▍       | 10.5M/44.1M [00:00<00:01, 18.2MB/s] 29%|██▊       | 12.6M/44.1M [00:00<00:02, 14.4MB/s] 44%|████▍     | 19.4M/44.1M [00:01<00:01, 16.6MB/s] 61%|██████    | 26.7M/44.1M [00:01<00:00, 21.4MB/s] 77%|███████▋  | 34.1M/44.1M [00:01<00:00, 25.0MB/s] 83%|████████▎ | 36.7M/44.1M [00:02<00:00, 16.6MB/s] 96%|█████████▋| 42.5M/44.1M [00:02<00:00, 18.6MB/s]100%|██████████| 44.1M/44.1M [00:02<00:00, 18.7MB/s]
+
+  0%|          | 0.00/44.1M [00:00<?, ?B/s]
+  1%|          | 524k/44.1M [00:00<00:13, 3.23MB/s]
+ 11%|█         | 4.72M/44.1M [00:00<00:03, 12.8MB/s]
+ 24%|██▍       | 10.5M/44.1M [00:00<00:01, 18.2MB/s]
+ 29%|██▊       | 12.6M/44.1M [00:00<00:02, 14.4MB/s]
+ 44%|████▍     | 19.4M/44.1M [00:01<00:01, 16.6MB/s]
+ 61%|██████    | 26.7M/44.1M [00:01<00:00, 21.4MB/s]
+ 77%|███████▋  | 34.1M/44.1M [00:01<00:00, 25.0MB/s]
+ 83%|████████▎ | 36.7M/44.1M [00:02<00:00, 16.6MB/s]
+ 96%|█████████▋| 42.5M/44.1M [00:02<00:00, 18.6MB/s]
+100%|██████████| 44.1M/44.1M [00:02<00:00, 18.7MB/s]
 Downloading...
 From: https://drive.google.com/uc?id=1-t1Qha7Bu9DKwFxUL9Tt6A6nw6ANtImI
 To: /opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/data/VGPhraseCut_v0/refer_input_val.json
-  0%|          | 0.00/3.30M [00:00<?, ?B/s] 16%|█▌        | 524k/3.30M [00:00<00:03, 816kB/s] 32%|███▏      | 1.05M/3.30M [00:00<00:01, 1.54MB/s] 63%|██████▎   | 2.10M/3.30M [00:00<00:00, 3.15MB/s]100%|██████████| 3.30M/3.30M [00:00<00:00, 3.37MB/s]
+
+  0%|          | 0.00/3.30M [00:00<?, ?B/s]
+ 16%|█▌        | 524k/3.30M [00:00<00:03, 816kB/s]
+ 32%|███▏      | 1.05M/3.30M [00:00<00:01, 1.54MB/s]
+ 63%|██████▎   | 2.10M/3.30M [00:00<00:00, 3.15MB/s]
+100%|██████████| 3.30M/3.30M [00:00<00:00, 3.37MB/s]
 Downloading...
 From: https://drive.google.com/uc?id=1o1waJid-D5EvyIoDUyqUbTYofcIPcLZt
 To: /opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/data/VGPhraseCut_v0/refer_test.json
-  0%|          | 0.00/30.4M [00:00<?, ?B/s]  2%|▏         | 524k/30.4M [00:00<00:36, 823kB/s]  3%|▎         | 1.05M/30.4M [00:00<00:18, 1.55MB/s]  7%|▋         | 2.10M/30.4M [00:00<00:08, 3.17MB/s] 12%|█▏        | 3.67M/30.4M [00:00<00:04, 5.79MB/s] 21%|██        | 6.29M/30.4M [00:01<00:02, 10.5MB/s] 29%|██▉       | 8.91M/30.4M [00:01<00:01, 13.9MB/s] 38%|███▊      | 11.5M/30.4M [00:01<00:01, 16.5MB/s] 47%|████▋     | 14.2M/30.4M [00:01<00:00, 18.4MB/s] 55%|█████▌    | 16.8M/30.4M [00:01<00:00, 19.4MB/s] 64%|██████▍   | 19.4M/30.4M [00:01<00:00, 17.9MB/s] 71%|███████   | 21.5M/30.4M [00:01<00:00, 14.3MB/s] 79%|███████▉  | 24.1M/30.4M [00:02<00:00, 16.4MB/s] 86%|████████▋ | 26.2M/30.4M [00:02<00:00, 15.1MB/s] 95%|█████████▍| 28.8M/30.4M [00:02<00:00, 17.1MB/s]100%|██████████| 30.4M/30.4M [00:02<00:00, 12.6MB/s]
+
+  0%|          | 0.00/30.4M [00:00<?, ?B/s]
+  2%|▏         | 524k/30.4M [00:00<00:36, 823kB/s]
+  3%|▎         | 1.05M/30.4M [00:00<00:18, 1.55MB/s]
+  7%|▋         | 2.10M/30.4M [00:00<00:08, 3.17MB/s]
+ 12%|█▏        | 3.67M/30.4M [00:00<00:04, 5.79MB/s]
+ 21%|██        | 6.29M/30.4M [00:01<00:02, 10.5MB/s]
+ 29%|██▉       | 8.91M/30.4M [00:01<00:01, 13.9MB/s]
+ 38%|███▊      | 11.5M/30.4M [00:01<00:01, 16.5MB/s]
+ 47%|████▋     | 14.2M/30.4M [00:01<00:00, 18.4MB/s]
+ 55%|█████▌    | 16.8M/30.4M [00:01<00:00, 19.4MB/s]
+ 64%|██████▍   | 19.4M/30.4M [00:01<00:00, 17.9MB/s]
+ 71%|███████   | 21.5M/30.4M [00:01<00:00, 14.3MB/s]
+ 79%|███████▉  | 24.1M/30.4M [00:02<00:00, 16.4MB/s]
+ 86%|████████▋ | 26.2M/30.4M [00:02<00:00, 15.1MB/s]
+ 95%|█████████▍| 28.8M/30.4M [00:02<00:00, 17.1MB/s]
+100%|██████████| 30.4M/30.4M [00:02<00:00, 12.6MB/s]
 Downloading...
 From: https://drive.google.com/uc?id=1oKPI3pAGL36iELIbZ8xBCRdv8XFjNGyY
 To: /opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/data/VGPhraseCut_v0/refer_input_test.json
-  0%|          | 0.00/2.42M [00:00<?, ?B/s] 22%|██▏       | 524k/2.42M [00:00<00:00, 2.41MB/s]100%|██████████| 2.42M/2.42M [00:00<00:00, 7.88MB/s]
+
+  0%|          | 0.00/2.42M [00:00<?, ?B/s]
+ 22%|██▏       | 524k/2.42M [00:00<00:00, 2.41MB/s]
+100%|██████████| 2.42M/2.42M [00:00<00:00, 7.88MB/s]
 Downloading...
 From: https://drive.google.com/uc?id=1HL9YX8rmMTAxAblkBAVv2PO4aNHfFVDe
 To: /opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/data/VGPhraseCut_v0/refer_miniv.json
-  0%|          | 0.00/2.17M [00:00<?, ?B/s] 24%|██▍       | 524k/2.17M [00:00<00:02, 797kB/s] 48%|████▊     | 1.05M/2.17M [00:00<00:00, 1.51MB/s] 97%|█████████▋| 2.10M/2.17M [00:00<00:00, 3.08MB/s]100%|██████████| 2.17M/2.17M [00:00<00:00, 2.35MB/s]
+
+  0%|          | 0.00/2.17M [00:00<?, ?B/s]
+ 24%|██▍       | 524k/2.17M [00:00<00:02, 797kB/s]
+ 48%|████▊     | 1.05M/2.17M [00:00<00:00, 1.51MB/s]
+ 97%|█████████▋| 2.10M/2.17M [00:00<00:00, 3.08MB/s]
+100%|██████████| 2.17M/2.17M [00:00<00:00, 2.35MB/s]
 Downloading...
 From: https://drive.google.com/uc?id=1aFjegXv6VFgbDdcKwB7S4whSoagfN3pr
 To: /opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/data/VGPhraseCut_v0/refer_input_miniv.json
-  0%|          | 0.00/140k [00:00<?, ?B/s]100%|██████████| 140k/140k [00:00<00:00, 344kB/s]100%|██████████| 140k/140k [00:00<00:00, 344kB/s]
+
+  0%|          | 0.00/140k [00:00<?, ?B/s]
+100%|██████████| 140k/140k [00:00<00:00, 344kB/s]
+100%|██████████| 140k/140k [00:00<00:00, 344kB/s]
 78082 imgs to be downloaded. This may take some time.
 downloaded 20 / 78082 images
 downloaded 40 / 78082 images
@@ -488,44 +613,180 @@ requests.exceptions.ConnectTimeout: HTTPSConnectionPool(host='cs.stanford.edu', 
 Downloading...
 From: https://drive.google.com/uc?id=1QbunEpB0l6PXCTVR5L7YsJM7-eNoKjHM
 To: /opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/data/VGPhraseCut_v0/name_att_rel_count.json
-  0%|          | 0.00/348k [00:00<?, ?B/s]100%|██████████| 348k/348k [00:00<00:00, 628kB/s]100%|██████████| 348k/348k [00:00<00:00, 628kB/s]
+
+  0%|          | 0.00/348k [00:00<?, ?B/s]
+100%|██████████| 348k/348k [00:00<00:00, 628kB/s]
+100%|██████████| 348k/348k [00:00<00:00, 628kB/s]
 Downloading...
 From: https://drive.google.com/uc?id=1UmjLJx9BGE9ruOXK1T4iGCYKurY0jNOL
 To: /opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/data/VGPhraseCut_v0/image_data_split.json
-  0%|          | 0.00/15.9M [00:00<?, ?B/s]  3%|▎         | 524k/15.9M [00:00<00:19, 801kB/s]  7%|▋         | 1.05M/15.9M [00:00<00:09, 1.51MB/s] 13%|█▎        | 2.10M/15.9M [00:00<00:04, 3.08MB/s] 23%|██▎       | 3.67M/15.9M [00:01<00:02, 5.65MB/s] 40%|███▉      | 6.29M/15.9M [00:01<00:00, 10.2MB/s] 56%|█████▌    | 8.91M/15.9M [00:01<00:00, 13.6MB/s] 72%|███████▏  | 11.5M/15.9M [00:01<00:00, 16.1MB/s] 89%|████████▉ | 14.2M/15.9M [00:01<00:00, 18.0MB/s]100%|██████████| 15.9M/15.9M [00:01<00:00, 10.3MB/s]
+
+  0%|          | 0.00/15.9M [00:00<?, ?B/s]
+  3%|▎         | 524k/15.9M [00:00<00:19, 801kB/s]
+  7%|▋         | 1.05M/15.9M [00:00<00:09, 1.51MB/s]
+ 13%|█▎        | 2.10M/15.9M [00:00<00:04, 3.08MB/s]
+ 23%|██▎       | 3.67M/15.9M [00:01<00:02, 5.65MB/s]
+ 40%|███▉      | 6.29M/15.9M [00:01<00:00, 10.2MB/s]
+ 56%|█████▌    | 8.91M/15.9M [00:01<00:00, 13.6MB/s]
+ 72%|███████▏  | 11.5M/15.9M [00:01<00:00, 16.1MB/s]
+ 89%|████████▉ | 14.2M/15.9M [00:01<00:00, 18.0MB/s]
+100%|██████████| 15.9M/15.9M [00:01<00:00, 10.3MB/s]
 Downloading...
 From (uriginal): https://drive.google.com/uc?id=1VCFRajJ4YXPmW5SJg6lS0uKaVAysO61F
 From (redirected): https://drive.google.com/uc?id=1VCFRajJ4YXPmW5SJg6lS0uKaVAysO61F&confirm=t&uuid=119a2dd9-2534-446f-b37b-b02f188d13bf
 To: /opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/data/VGPhraseCut_v0/refer_train.json
-  0%|          | 0.00/344M [00:00<?, ?B/s]  0%|          | 524k/344M [00:00<02:31, 2.27MB/s]  1%|          | 3.67M/344M [00:00<00:29, 11.4MB/s]  2%|▏         | 5.24M/344M [00:00<00:36, 9.21MB/s]  3%|▎         | 8.91M/344M [00:00<00:26, 12.6MB/s]  3%|▎         | 11.0M/344M [00:01<00:29, 11.2MB/s]  4%|▍         | 13.6M/344M [00:01<00:29, 11.2MB/s]  5%|▌         | 17.3M/344M [00:01<00:20, 15.7MB/s]  6%|▌         | 19.4M/344M [00:01<00:37, 8.74MB/s]  6%|▌         | 21.0M/344M [00:02<00:42, 7.59MB/s]  8%|▊         | 26.7M/344M [00:02<00:28, 11.0MB/s]  8%|▊         | 28.8M/344M [00:02<00:30, 10.3MB/s] 10%|█         | 35.7M/344M [00:03<00:21, 14.3MB/s] 12%|█▏        | 43.0M/344M [00:03<00:16, 18.1MB/s] 13%|█▎        | 45.1M/344M [00:03<00:21, 13.9MB/s] 15%|█▌        | 53.0M/344M [00:04<00:16, 17.7MB/s] 17%|█▋        | 59.8M/344M [00:04<00:15, 18.8MB/s] 20%|█▉        | 67.6M/344M [00:04<00:13, 20.6MB/s] 22%|██▏       | 76.0M/344M [00:04<00:12, 21.8MB/s] 25%|██▍       | 84.4M/344M [00:05<00:10, 24.3MB/s] 27%|██▋       | 92.8M/344M [00:05<00:10, 23.8MB/s] 29%|██▉       | 101M/344M [00:05<00:09, 25.3MB/s]  32%|███▏      | 110M/344M [00:06<00:08, 26.6MB/s] 34%|███▍      | 118M/344M [00:06<00:08, 27.6MB/s] 37%|███▋      | 126M/344M [00:06<00:09, 23.1MB/s] 39%|███▉      | 134M/344M [00:07<00:07, 28.4MB/s] 40%|████      | 138M/344M [00:07<00:09, 22.6MB/s] 42%|████▏     | 143M/344M [00:07<00:09, 22.1MB/s] 44%|████▍     | 152M/344M [00:07<00:08, 24.0MB/s] 46%|████▋     | 160M/344M [00:08<00:08, 22.8MB/s] 49%|████▉     | 168M/344M [00:08<00:06, 25.2MB/s] 51%|█████▏    | 177M/344M [00:08<00:06, 25.2MB/s] 54%|█████▍    | 185M/344M [00:09<00:06, 25.9MB/s] 56%|█████▌    | 193M/344M [00:09<00:06, 23.1MB/s] 59%|█████▊    | 202M/344M [00:10<00:06, 21.3MB/s] 61%|██████    | 210M/344M [00:10<00:05, 23.6MB/s] 64%|██████▎   | 219M/344M [00:10<00:05, 21.8MB/s] 66%|██████▌   | 227M/344M [00:11<00:04, 24.3MB/s] 68%|██████▊   | 235M/344M [00:11<00:04, 24.8MB/s] 71%|███████   | 244M/344M [00:11<00:03, 25.1MB/s] 73%|███████▎  | 252M/344M [00:12<00:03, 23.2MB/s] 76%|███████▌  | 261M/344M [00:12<00:03, 21.6MB/s] 78%|███████▊  | 269M/344M [00:12<00:03, 24.3MB/s] 81%|████████  | 277M/344M [00:13<00:02, 24.9MB/s] 83%|████████▎ | 286M/344M [00:13<00:02, 27.1MB/s] 85%|████████▌ | 294M/344M [00:13<00:01, 27.3MB/s] 88%|████████▊ | 303M/344M [00:14<00:01, 29.4MB/s] 90%|█████████ | 311M/344M [00:14<00:01, 29.2MB/s] 93%|█████████▎| 319M/344M [00:14<00:00, 28.1MB/s] 95%|█████████▌| 328M/344M [00:14<00:00, 28.4MB/s] 98%|█████████▊| 336M/344M [00:15<00:00, 29.8MB/s]100%|██████████| 344M/344M [00:15<00:00, 22.5MB/s]
+
+  0%|          | 0.00/344M [00:00<?, ?B/s]
+  0%|          | 524k/344M [00:00<02:31, 2.27MB/s]
+  1%|          | 3.67M/344M [00:00<00:29, 11.4MB/s]
+  2%|▏         | 5.24M/344M [00:00<00:36, 9.21MB/s]
+  3%|▎         | 8.91M/344M [00:00<00:26, 12.6MB/s]
+  3%|▎         | 11.0M/344M [00:01<00:29, 11.2MB/s]
+  4%|▍         | 13.6M/344M [00:01<00:29, 11.2MB/s]
+  5%|▌         | 17.3M/344M [00:01<00:20, 15.7MB/s]
+  6%|▌         | 19.4M/344M [00:01<00:37, 8.74MB/s]
+  6%|▌         | 21.0M/344M [00:02<00:42, 7.59MB/s]
+  8%|▊         | 26.7M/344M [00:02<00:28, 11.0MB/s]
+  8%|▊         | 28.8M/344M [00:02<00:30, 10.3MB/s]
+ 10%|█         | 35.7M/344M [00:03<00:21, 14.3MB/s]
+ 12%|█▏        | 43.0M/344M [00:03<00:16, 18.1MB/s]
+ 13%|█▎        | 45.1M/344M [00:03<00:21, 13.9MB/s]
+ 15%|█▌        | 53.0M/344M [00:04<00:16, 17.7MB/s]
+ 17%|█▋        | 59.8M/344M [00:04<00:15, 18.8MB/s]
+ 20%|█▉        | 67.6M/344M [00:04<00:13, 20.6MB/s]
+ 22%|██▏       | 76.0M/344M [00:04<00:12, 21.8MB/s]
+ 25%|██▍       | 84.4M/344M [00:05<00:10, 24.3MB/s]
+ 27%|██▋       | 92.8M/344M [00:05<00:10, 23.8MB/s]
+ 29%|██▉       | 101M/344M [00:05<00:09, 25.3MB/s] 
+ 32%|███▏      | 110M/344M [00:06<00:08, 26.6MB/s]
+ 34%|███▍      | 118M/344M [00:06<00:08, 27.6MB/s]
+ 37%|███▋      | 126M/344M [00:06<00:09, 23.1MB/s]
+ 39%|███▉      | 134M/344M [00:07<00:07, 28.4MB/s]
+ 40%|████      | 138M/344M [00:07<00:09, 22.6MB/s]
+ 42%|████▏     | 143M/344M [00:07<00:09, 22.1MB/s]
+ 44%|████▍     | 152M/344M [00:07<00:08, 24.0MB/s]
+ 46%|████▋     | 160M/344M [00:08<00:08, 22.8MB/s]
+ 49%|████▉     | 168M/344M [00:08<00:06, 25.2MB/s]
+ 51%|█████▏    | 177M/344M [00:08<00:06, 25.2MB/s]
+ 54%|█████▍    | 185M/344M [00:09<00:06, 25.9MB/s]
+ 56%|█████▌    | 193M/344M [00:09<00:06, 23.1MB/s]
+ 59%|█████▊    | 202M/344M [00:10<00:06, 21.3MB/s]
+ 61%|██████    | 210M/344M [00:10<00:05, 23.6MB/s]
+ 64%|██████▎   | 219M/344M [00:10<00:05, 21.8MB/s]
+ 66%|██████▌   | 227M/344M [00:11<00:04, 24.3MB/s]
+ 68%|██████▊   | 235M/344M [00:11<00:04, 24.8MB/s]
+ 71%|███████   | 244M/344M [00:11<00:03, 25.1MB/s]
+ 73%|███████▎  | 252M/344M [00:12<00:03, 23.2MB/s]
+ 76%|███████▌  | 261M/344M [00:12<00:03, 21.6MB/s]
+ 78%|███████▊  | 269M/344M [00:12<00:03, 24.3MB/s]
+ 81%|████████  | 277M/344M [00:13<00:02, 24.9MB/s]
+ 83%|████████▎ | 286M/344M [00:13<00:02, 27.1MB/s]
+ 85%|████████▌ | 294M/344M [00:13<00:01, 27.3MB/s]
+ 88%|████████▊ | 303M/344M [00:14<00:01, 29.4MB/s]
+ 90%|█████████ | 311M/344M [00:14<00:01, 29.2MB/s]
+ 93%|█████████▎| 319M/344M [00:14<00:00, 28.1MB/s]
+ 95%|█████████▌| 328M/344M [00:14<00:00, 28.4MB/s]
+ 98%|█████████▊| 336M/344M [00:15<00:00, 29.8MB/s]
+100%|██████████| 344M/344M [00:15<00:00, 22.5MB/s]
 Downloading...
 From: https://drive.google.com/uc?id=1b59w_IcfpvNfBhraSKw5RfmFHFJ4lIAb
 To: /opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/data/VGPhraseCut_v0/refer_input_train.json
-  0%|          | 0.00/53.7M [00:00<?, ?B/s]  1%|          | 524k/53.7M [00:00<01:04, 819kB/s]  2%|▏         | 1.05M/53.7M [00:00<00:33, 1.55MB/s]  4%|▍         | 2.10M/53.7M [00:00<00:16, 3.16MB/s]  7%|▋         | 3.67M/53.7M [00:00<00:08, 5.79MB/s] 12%|█▏        | 6.29M/53.7M [00:01<00:04, 10.4MB/s] 17%|█▋        | 8.91M/53.7M [00:01<00:03, 13.9MB/s] 21%|██▏       | 11.5M/53.7M [00:01<00:02, 16.4MB/s] 26%|██▋       | 14.2M/53.7M [00:01<00:02, 18.5MB/s] 31%|███       | 16.8M/53.7M [00:01<00:01, 20.0MB/s] 36%|███▌      | 19.4M/53.7M [00:01<00:01, 21.1MB/s] 41%|████      | 22.0M/53.7M [00:01<00:01, 17.7MB/s] 46%|████▌     | 24.6M/53.7M [00:01<00:01, 19.2MB/s] 51%|█████     | 27.3M/53.7M [00:02<00:01, 20.6MB/s] 56%|█████▌    | 29.9M/53.7M [00:02<00:01, 17.7MB/s] 60%|██████    | 32.5M/53.7M [00:02<00:01, 19.2MB/s] 65%|██████▌   | 35.1M/53.7M [00:02<00:00, 20.4MB/s] 70%|███████   | 37.7M/53.7M [00:02<00:00, 19.3MB/s] 75%|███████▌  | 40.4M/53.7M [00:02<00:00, 20.5MB/s] 80%|████████  | 43.0M/53.7M [00:02<00:00, 21.5MB/s] 85%|████████▍ | 45.6M/53.7M [00:02<00:00, 22.2MB/s] 90%|████████▉ | 48.2M/53.7M [00:03<00:00, 22.6MB/s] 95%|█████████▍| 50.9M/53.7M [00:03<00:00, 23.0MB/s]100%|█████████▉| 53.5M/53.7M [00:03<00:00, 23.3MB/s]100%|██████████| 53.7M/53.7M [00:03<00:00, 16.2MB/s]
+
+  0%|          | 0.00/53.7M [00:00<?, ?B/s]
+  1%|          | 524k/53.7M [00:00<01:04, 819kB/s]
+  2%|▏         | 1.05M/53.7M [00:00<00:33, 1.55MB/s]
+  4%|▍         | 2.10M/53.7M [00:00<00:16, 3.16MB/s]
+  7%|▋         | 3.67M/53.7M [00:00<00:08, 5.79MB/s]
+ 12%|█▏        | 6.29M/53.7M [00:01<00:04, 10.4MB/s]
+ 17%|█▋        | 8.91M/53.7M [00:01<00:03, 13.9MB/s]
+ 21%|██▏       | 11.5M/53.7M [00:01<00:02, 16.4MB/s]
+ 26%|██▋       | 14.2M/53.7M [00:01<00:02, 18.5MB/s]
+ 31%|███       | 16.8M/53.7M [00:01<00:01, 20.0MB/s]
+ 36%|███▌      | 19.4M/53.7M [00:01<00:01, 21.1MB/s]
+ 41%|████      | 22.0M/53.7M [00:01<00:01, 17.7MB/s]
+ 46%|████▌     | 24.6M/53.7M [00:01<00:01, 19.2MB/s]
+ 51%|█████     | 27.3M/53.7M [00:02<00:01, 20.6MB/s]
+ 56%|█████▌    | 29.9M/53.7M [00:02<00:01, 17.7MB/s]
+ 60%|██████    | 32.5M/53.7M [00:02<00:01, 19.2MB/s]
+ 65%|██████▌   | 35.1M/53.7M [00:02<00:00, 20.4MB/s]
+ 70%|███████   | 37.7M/53.7M [00:02<00:00, 19.3MB/s]
+ 75%|███████▌  | 40.4M/53.7M [00:02<00:00, 20.5MB/s]
+ 80%|████████  | 43.0M/53.7M [00:02<00:00, 21.5MB/s]
+ 85%|████████▍ | 45.6M/53.7M [00:02<00:00, 22.2MB/s]
+ 90%|████████▉ | 48.2M/53.7M [00:03<00:00, 22.6MB/s]
+ 95%|█████████▍| 50.9M/53.7M [00:03<00:00, 23.0MB/s]
+100%|█████████▉| 53.5M/53.7M [00:03<00:00, 23.3MB/s]
+100%|██████████| 53.7M/53.7M [00:03<00:00, 16.2MB/s]
 Downloading...
 From: https://drive.google.com/uc?id=1Q2HFlss5Y2zLjTydQMWzq6u0iFsGPNnd
 To: /opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/data/VGPhraseCut_v0/refer_val.json
-  0%|          | 0.00/44.1M [00:00<?, ?B/s]  1%|          | 524k/44.1M [00:00<00:13, 3.16MB/s] 10%|▉         | 4.19M/44.1M [00:00<00:02, 18.6MB/s] 15%|█▌        | 6.82M/44.1M [00:00<00:02, 16.2MB/s] 24%|██▍       | 10.5M/44.1M [00:00<00:02, 16.3MB/s] 29%|██▊       | 12.6M/44.1M [00:00<00:02, 12.2MB/s] 43%|████▎     | 18.9M/44.1M [00:01<00:01, 16.7MB/s] 59%|█████▉    | 26.2M/44.1M [00:01<00:00, 23.0MB/s] 65%|██████▌   | 28.8M/44.1M [00:01<00:00, 19.8MB/s] 77%|███████▋  | 34.1M/44.1M [00:01<00:00, 23.7MB/s] 83%|████████▎ | 36.7M/44.1M [00:01<00:00, 19.1MB/s]100%|██████████| 44.1M/44.1M [00:02<00:00, 21.2MB/s]
+
+  0%|          | 0.00/44.1M [00:00<?, ?B/s]
+  1%|          | 524k/44.1M [00:00<00:13, 3.16MB/s]
+ 10%|▉         | 4.19M/44.1M [00:00<00:02, 18.6MB/s]
+ 15%|█▌        | 6.82M/44.1M [00:00<00:02, 16.2MB/s]
+ 24%|██▍       | 10.5M/44.1M [00:00<00:02, 16.3MB/s]
+ 29%|██▊       | 12.6M/44.1M [00:00<00:02, 12.2MB/s]
+ 43%|████▎     | 18.9M/44.1M [00:01<00:01, 16.7MB/s]
+ 59%|█████▉    | 26.2M/44.1M [00:01<00:00, 23.0MB/s]
+ 65%|██████▌   | 28.8M/44.1M [00:01<00:00, 19.8MB/s]
+ 77%|███████▋  | 34.1M/44.1M [00:01<00:00, 23.7MB/s]
+ 83%|████████▎ | 36.7M/44.1M [00:01<00:00, 19.1MB/s]
+100%|██████████| 44.1M/44.1M [00:02<00:00, 21.2MB/s]
 Downloading...
 From: https://drive.google.com/uc?id=1-t1Qha7Bu9DKwFxUL9Tt6A6nw6ANtImI
 To: /opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/data/VGPhraseCut_v0/refer_input_val.json
-  0%|          | 0.00/3.30M [00:00<?, ?B/s] 16%|█▌        | 524k/3.30M [00:00<00:03, 820kB/s] 32%|███▏      | 1.05M/3.30M [00:00<00:01, 1.55MB/s] 63%|██████▎   | 2.10M/3.30M [00:00<00:00, 3.15MB/s]100%|██████████| 3.30M/3.30M [00:00<00:00, 3.38MB/s]
+
+  0%|          | 0.00/3.30M [00:00<?, ?B/s]
+ 16%|█▌        | 524k/3.30M [00:00<00:03, 820kB/s]
+ 32%|███▏      | 1.05M/3.30M [00:00<00:01, 1.55MB/s]
+ 63%|██████▎   | 2.10M/3.30M [00:00<00:00, 3.15MB/s]
+100%|██████████| 3.30M/3.30M [00:00<00:00, 3.38MB/s]
 Downloading...
 From: https://drive.google.com/uc?id=1o1waJid-D5EvyIoDUyqUbTYofcIPcLZt
 To: /opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/data/VGPhraseCut_v0/refer_test.json
-  0%|          | 0.00/30.4M [00:00<?, ?B/s]  2%|▏         | 524k/30.4M [00:00<00:36, 817kB/s]  3%|▎         | 1.05M/30.4M [00:00<00:18, 1.54MB/s]  7%|▋         | 2.10M/30.4M [00:00<00:08, 3.15MB/s] 12%|█▏        | 3.67M/30.4M [00:01<00:04, 5.76MB/s] 21%|██        | 6.29M/30.4M [00:01<00:02, 10.4MB/s] 29%|██▉       | 8.91M/30.4M [00:01<00:01, 13.8MB/s] 38%|███▊      | 11.5M/30.4M [00:01<00:01, 16.4MB/s] 47%|████▋     | 14.2M/30.4M [00:01<00:00, 18.3MB/s] 55%|█████▌    | 16.8M/30.4M [00:01<00:00, 19.9MB/s] 64%|██████▍   | 19.4M/30.4M [00:01<00:00, 14.2MB/s] 71%|███████   | 21.5M/30.4M [00:02<00:00, 12.4MB/s] 79%|███████▉  | 24.1M/30.4M [00:02<00:00, 14.7MB/s] 86%|████████▋ | 26.2M/30.4M [00:02<00:00, 15.4MB/s] 95%|█████████▍| 28.8M/30.4M [00:02<00:00, 17.6MB/s]100%|██████████| 30.4M/30.4M [00:02<00:00, 12.3MB/s]
+
+  0%|          | 0.00/30.4M [00:00<?, ?B/s]
+  2%|▏         | 524k/30.4M [00:00<00:36, 817kB/s]
+  3%|▎         | 1.05M/30.4M [00:00<00:18, 1.54MB/s]
+  7%|▋         | 2.10M/30.4M [00:00<00:08, 3.15MB/s]
+ 12%|█▏        | 3.67M/30.4M [00:01<00:04, 5.76MB/s]
+ 21%|██        | 6.29M/30.4M [00:01<00:02, 10.4MB/s]
+ 29%|██▉       | 8.91M/30.4M [00:01<00:01, 13.8MB/s]
+ 38%|███▊      | 11.5M/30.4M [00:01<00:01, 16.4MB/s]
+ 47%|████▋     | 14.2M/30.4M [00:01<00:00, 18.3MB/s]
+ 55%|█████▌    | 16.8M/30.4M [00:01<00:00, 19.9MB/s]
+ 64%|██████▍   | 19.4M/30.4M [00:01<00:00, 14.2MB/s]
+ 71%|███████   | 21.5M/30.4M [00:02<00:00, 12.4MB/s]
+ 79%|███████▉  | 24.1M/30.4M [00:02<00:00, 14.7MB/s]
+ 86%|████████▋ | 26.2M/30.4M [00:02<00:00, 15.4MB/s]
+ 95%|█████████▍| 28.8M/30.4M [00:02<00:00, 17.6MB/s]
+100%|██████████| 30.4M/30.4M [00:02<00:00, 12.3MB/s]
 Downloading...
 From: https://drive.google.com/uc?id=1oKPI3pAGL36iELIbZ8xBCRdv8XFjNGyY
 To: /opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/data/VGPhraseCut_v0/refer_input_test.json
-  0%|          | 0.00/2.42M [00:00<?, ?B/s] 22%|██▏       | 524k/2.42M [00:00<00:02, 806kB/s] 43%|████▎     | 1.05M/2.42M [00:00<00:00, 1.52MB/s] 87%|████████▋ | 2.10M/2.42M [00:00<00:00, 3.10MB/s]100%|██████████| 2.42M/2.42M [00:00<00:00, 2.58MB/s]
+
+  0%|          | 0.00/2.42M [00:00<?, ?B/s]
+ 22%|██▏       | 524k/2.42M [00:00<00:02, 806kB/s]
+ 43%|████▎     | 1.05M/2.42M [00:00<00:00, 1.52MB/s]
+ 87%|████████▋ | 2.10M/2.42M [00:00<00:00, 3.10MB/s]
+100%|██████████| 2.42M/2.42M [00:00<00:00, 2.58MB/s]
 Downloading...
 From: https://drive.google.com/uc?id=1HL9YX8rmMTAxAblkBAVv2PO4aNHfFVDe
 To: /opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/data/VGPhraseCut_v0/refer_miniv.json
-  0%|          | 0.00/2.17M [00:00<?, ?B/s] 24%|██▍       | 524k/2.17M [00:00<00:02, 819kB/s] 48%|████▊     | 1.05M/2.17M [00:00<00:00, 1.55MB/s] 97%|█████████▋| 2.10M/2.17M [00:00<00:00, 3.15MB/s]100%|██████████| 2.17M/2.17M [00:00<00:00, 2.41MB/s]
+
+  0%|          | 0.00/2.17M [00:00<?, ?B/s]
+ 24%|██▍       | 524k/2.17M [00:00<00:02, 819kB/s]
+ 48%|████▊     | 1.05M/2.17M [00:00<00:00, 1.55MB/s]
+ 97%|█████████▋| 2.10M/2.17M [00:00<00:00, 3.15MB/s]
+100%|██████████| 2.17M/2.17M [00:00<00:00, 2.41MB/s]
 Downloading...
 From: https://drive.google.com/uc?id=1aFjegXv6VFgbDdcKwB7S4whSoagfN3pr
 To: /opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/data/VGPhraseCut_v0/refer_input_miniv.json
-  0%|          | 0.00/140k [00:00<?, ?B/s]100%|██████████| 140k/140k [00:00<00:00, 1.38MB/s]100%|██████████| 140k/140k [00:00<00:00, 1.38MB/s]
+
+  0%|          | 0.00/140k [00:00<?, ?B/s]
+100%|██████████| 140k/140k [00:00<00:00, 1.38MB/s]
+100%|██████████| 140k/140k [00:00<00:00, 1.38MB/s]
 78082 imgs to be downloaded. This may take some time.
 downloaded 20 / 78082 images
 downloaded 40 / 78082 images
@@ -1310,3 +1571,546 @@ downloaded 15600 / 78082 images
 downloaded 15620 / 78082 images
 downloaded 15640 / 78082 images
 downloaded 15660 / 78082 images
+downloaded 15680 / 78082 images
+downloaded 15700 / 78082 images
+downloaded 15720 / 78082 images
+downloaded 15740 / 78082 images
+downloaded 15760 / 78082 images
+downloaded 15780 / 78082 images
+downloaded 15800 / 78082 images
+downloaded 15820 / 78082 images
+downloaded 15840 / 78082 images
+downloaded 15860 / 78082 images
+downloaded 15880 / 78082 images
+downloaded 15900 / 78082 images
+downloaded 15920 / 78082 images
+downloaded 15940 / 78082 images
+downloaded 15960 / 78082 images
+downloaded 15980 / 78082 images
+downloaded 16000 / 78082 images
+downloaded 16020 / 78082 images
+downloaded 16040 / 78082 images
+downloaded 16060 / 78082 images
+downloaded 16080 / 78082 images
+downloaded 16100 / 78082 images
+downloaded 16120 / 78082 images
+downloaded 16140 / 78082 images
+downloaded 16160 / 78082 images
+downloaded 16180 / 78082 images
+downloaded 16200 / 78082 images
+downloaded 16220 / 78082 images
+downloaded 16240 / 78082 images
+downloaded 16260 / 78082 images
+downloaded 16280 / 78082 images
+downloaded 16300 / 78082 images
+downloaded 16320 / 78082 images
+downloaded 16340 / 78082 images
+downloaded 16360 / 78082 images
+downloaded 16380 / 78082 images
+downloaded 16400 / 78082 images
+downloaded 16420 / 78082 images
+downloaded 16440 / 78082 images
+downloaded 16460 / 78082 images
+downloaded 16480 / 78082 images
+downloaded 16500 / 78082 images
+downloaded 16520 / 78082 images
+downloaded 16540 / 78082 images
+downloaded 16560 / 78082 images
+downloaded 16580 / 78082 images
+downloaded 16600 / 78082 images
+downloaded 16620 / 78082 images
+downloaded 16640 / 78082 images
+downloaded 16660 / 78082 images
+downloaded 16680 / 78082 images
+downloaded 16700 / 78082 images
+downloaded 16720 / 78082 images
+downloaded 16740 / 78082 images
+downloaded 16760 / 78082 images
+downloaded 16780 / 78082 images
+downloaded 16800 / 78082 images
+downloaded 16820 / 78082 images
+downloaded 16840 / 78082 images
+downloaded 16860 / 78082 images
+downloaded 16880 / 78082 images
+downloaded 16900 / 78082 images
+downloaded 16920 / 78082 images
+downloaded 16940 / 78082 images
+downloaded 16960 / 78082 images
+downloaded 16980 / 78082 images
+downloaded 17000 / 78082 images
+downloaded 17020 / 78082 images
+downloaded 17040 / 78082 images
+downloaded 17060 / 78082 images
+downloaded 17080 / 78082 images
+downloaded 17100 / 78082 images
+downloaded 17120 / 78082 images
+downloaded 17140 / 78082 images
+downloaded 17160 / 78082 images
+downloaded 17180 / 78082 images
+downloaded 17200 / 78082 images
+downloaded 17220 / 78082 images
+downloaded 17240 / 78082 images
+downloaded 17260 / 78082 images
+downloaded 17280 / 78082 images
+downloaded 17300 / 78082 images
+downloaded 17320 / 78082 images
+downloaded 17340 / 78082 images
+downloaded 17360 / 78082 images
+downloaded 17380 / 78082 images
+downloaded 17400 / 78082 images
+downloaded 17420 / 78082 images
+downloaded 17440 / 78082 images
+downloaded 17460 / 78082 images
+downloaded 17480 / 78082 images
+downloaded 17500 / 78082 images
+downloaded 17520 / 78082 images
+downloaded 17540 / 78082 images
+downloaded 17560 / 78082 images
+downloaded 17580 / 78082 images
+downloaded 17600 / 78082 images
+downloaded 17620 / 78082 images
+downloaded 17640 / 78082 images
+downloaded 17660 / 78082 images
+downloaded 17680 / 78082 images
+downloaded 17700 / 78082 images
+downloaded 17720 / 78082 images
+downloaded 17740 / 78082 images
+downloaded 17760 / 78082 images
+downloaded 17780 / 78082 images
+downloaded 17800 / 78082 images
+downloaded 17820 / 78082 images
+downloaded 17840 / 78082 images
+downloaded 17860 / 78082 images
+downloaded 17880 / 78082 images
+downloaded 17900 / 78082 images
+downloaded 17920 / 78082 images
+downloaded 17940 / 78082 images
+downloaded 17960 / 78082 images
+downloaded 17980 / 78082 images
+downloaded 18000 / 78082 images
+downloaded 18020 / 78082 images
+downloaded 18040 / 78082 images
+downloaded 18060 / 78082 images
+downloaded 18080 / 78082 images
+downloaded 18100 / 78082 images
+downloaded 18120 / 78082 images
+downloaded 18140 / 78082 images
+downloaded 18160 / 78082 images
+downloaded 18180 / 78082 images
+downloaded 18200 / 78082 images
+downloaded 18220 / 78082 images
+downloaded 18240 / 78082 images
+downloaded 18260 / 78082 images
+downloaded 18280 / 78082 images
+downloaded 18300 / 78082 images
+downloaded 18320 / 78082 images
+downloaded 18340 / 78082 images
+downloaded 18360 / 78082 images
+downloaded 18380 / 78082 images
+downloaded 18400 / 78082 images
+downloaded 18420 / 78082 images
+downloaded 18440 / 78082 images
+downloaded 18460 / 78082 images
+downloaded 18480 / 78082 images
+downloaded 18500 / 78082 images
+downloaded 18520 / 78082 images
+downloaded 18540 / 78082 images
+downloaded 18560 / 78082 images
+downloaded 18580 / 78082 images
+downloaded 18600 / 78082 images
+downloaded 18620 / 78082 images
+downloaded 18640 / 78082 images
+downloaded 18660 / 78082 images
+downloaded 18680 / 78082 images
+downloaded 18700 / 78082 images
+downloaded 18720 / 78082 images
+downloaded 18740 / 78082 images
+downloaded 18760 / 78082 images
+downloaded 18780 / 78082 images
+downloaded 18800 / 78082 images
+downloaded 18820 / 78082 images
+downloaded 18840 / 78082 images
+downloaded 18860 / 78082 images
+downloaded 18880 / 78082 images
+downloaded 18900 / 78082 images
+downloaded 18920 / 78082 images
+downloaded 18940 / 78082 images
+downloaded 18960 / 78082 images
+downloaded 18980 / 78082 images
+downloaded 19000 / 78082 images
+downloaded 19020 / 78082 images
+downloaded 19040 / 78082 images
+downloaded 19060 / 78082 images
+downloaded 19080 / 78082 images
+downloaded 19100 / 78082 images
+downloaded 19120 / 78082 images
+downloaded 19140 / 78082 images
+downloaded 19160 / 78082 images
+downloaded 19180 / 78082 images
+downloaded 19200 / 78082 images
+downloaded 19220 / 78082 images
+downloaded 19240 / 78082 images
+downloaded 19260 / 78082 images
+downloaded 19280 / 78082 images
+downloaded 19300 / 78082 images
+downloaded 19320 / 78082 images
+downloaded 19340 / 78082 images
+downloaded 19360 / 78082 images
+downloaded 19380 / 78082 images
+downloaded 19400 / 78082 images
+downloaded 19420 / 78082 images
+downloaded 19440 / 78082 images
+downloaded 19460 / 78082 images
+downloaded 19480 / 78082 images
+downloaded 19500 / 78082 images
+downloaded 19520 / 78082 images
+downloaded 19540 / 78082 images
+downloaded 19560 / 78082 images
+downloaded 19580 / 78082 images
+downloaded 19600 / 78082 images
+downloaded 19620 / 78082 images
+downloaded 19640 / 78082 images
+downloaded 19660 / 78082 images
+downloaded 19680 / 78082 images
+downloaded 19700 / 78082 images
+downloaded 19720 / 78082 images
+downloaded 19740 / 78082 images
+downloaded 19760 / 78082 images
+downloaded 19780 / 78082 images
+downloaded 19800 / 78082 images
+downloaded 19820 / 78082 images
+downloaded 19840 / 78082 images
+downloaded 19860 / 78082 images
+downloaded 19880 / 78082 images
+downloaded 19900 / 78082 images
+downloaded 19920 / 78082 images
+downloaded 19940 / 78082 images
+downloaded 19960 / 78082 images
+downloaded 19980 / 78082 images
+downloaded 20000 / 78082 images
+downloaded 20020 / 78082 images
+downloaded 20040 / 78082 images
+downloaded 20060 / 78082 images
+downloaded 20080 / 78082 images
+downloaded 20100 / 78082 images
+downloaded 20120 / 78082 images
+downloaded 20140 / 78082 images
+downloaded 20160 / 78082 images
+downloaded 20180 / 78082 images
+downloaded 20200 / 78082 images
+downloaded 20220 / 78082 images
+downloaded 20240 / 78082 images
+downloaded 20260 / 78082 images
+downloaded 20280 / 78082 images
+downloaded 20300 / 78082 images
+downloaded 20320 / 78082 images
+downloaded 20340 / 78082 images
+downloaded 20360 / 78082 images
+downloaded 20380 / 78082 images
+downloaded 20400 / 78082 images
+downloaded 20420 / 78082 images
+downloaded 20440 / 78082 images
+downloaded 20460 / 78082 images
+downloaded 20480 / 78082 images
+downloaded 20500 / 78082 images
+downloaded 20520 / 78082 images
+downloaded 20540 / 78082 images
+downloaded 20560 / 78082 images
+downloaded 20580 / 78082 images
+downloaded 20600 / 78082 images
+downloaded 20620 / 78082 images
+downloaded 20640 / 78082 images
+downloaded 20660 / 78082 images
+downloaded 20680 / 78082 images
+downloaded 20700 / 78082 images
+downloaded 20720 / 78082 images
+downloaded 20740 / 78082 images
+downloaded 20760 / 78082 images
+downloaded 20780 / 78082 images
+downloaded 20800 / 78082 images
+downloaded 20820 / 78082 images
+downloaded 20840 / 78082 images
+downloaded 20860 / 78082 images
+downloaded 20880 / 78082 images
+downloaded 20900 / 78082 images
+downloaded 20920 / 78082 images
+downloaded 20940 / 78082 images
+downloaded 20960 / 78082 images
+downloaded 20980 / 78082 images
+downloaded 21000 / 78082 images
+downloaded 21020 / 78082 images
+downloaded 21040 / 78082 images
+downloaded 21060 / 78082 images
+downloaded 21080 / 78082 images
+downloaded 21100 / 78082 images
+downloaded 21120 / 78082 images
+downloaded 21140 / 78082 images
+downloaded 21160 / 78082 images
+downloaded 21180 / 78082 images
+downloaded 21200 / 78082 images
+downloaded 21220 / 78082 images
+downloaded 21240 / 78082 images
+downloaded 21260 / 78082 images
+downloaded 21280 / 78082 images
+downloaded 21300 / 78082 images
+downloaded 21320 / 78082 images
+downloaded 21340 / 78082 images
+downloaded 21360 / 78082 images
+downloaded 21380 / 78082 images
+downloaded 21400 / 78082 images
+downloaded 21420 / 78082 images
+downloaded 21440 / 78082 images
+downloaded 21460 / 78082 images
+downloaded 21480 / 78082 images
+downloaded 21500 / 78082 images
+downloaded 21520 / 78082 images
+downloaded 21540 / 78082 images
+downloaded 21560 / 78082 images
+downloaded 21580 / 78082 images
+downloaded 21600 / 78082 images
+downloaded 21620 / 78082 images
+downloaded 21640 / 78082 images
+downloaded 21660 / 78082 images
+downloaded 21680 / 78082 images
+downloaded 21700 / 78082 images
+downloaded 21720 / 78082 images
+downloaded 21740 / 78082 images
+downloaded 21760 / 78082 images
+downloaded 21780 / 78082 images
+downloaded 21800 / 78082 images
+downloaded 21820 / 78082 images
+downloaded 21840 / 78082 images
+downloaded 21860 / 78082 images
+downloaded 21880 / 78082 images
+downloaded 21900 / 78082 images
+downloaded 21920 / 78082 images
+downloaded 21940 / 78082 images
+downloaded 21960 / 78082 images
+downloaded 21980 / 78082 images
+downloaded 22000 / 78082 images
+downloaded 22020 / 78082 images
+downloaded 22040 / 78082 images
+downloaded 22060 / 78082 images
+downloaded 22080 / 78082 images
+downloaded 22100 / 78082 images
+downloaded 22120 / 78082 images
+downloaded 22140 / 78082 images
+downloaded 22160 / 78082 images
+downloaded 22180 / 78082 images
+downloaded 22200 / 78082 images
+downloaded 22220 / 78082 images
+downloaded 22240 / 78082 images
+downloaded 22260 / 78082 images
+downloaded 22280 / 78082 images
+downloaded 22300 / 78082 images
+downloaded 22320 / 78082 images
+downloaded 22340 / 78082 images
+downloaded 22360 / 78082 images
+downloaded 22380 / 78082 images
+downloaded 22400 / 78082 images
+downloaded 22420 / 78082 images
+downloaded 22440 / 78082 images
+downloaded 22460 / 78082 images
+downloaded 22480 / 78082 images
+downloaded 22500 / 78082 images
+downloaded 22520 / 78082 images
+downloaded 22540 / 78082 images
+downloaded 22560 / 78082 images
+downloaded 22580 / 78082 images
+downloaded 22600 / 78082 images
+downloaded 22620 / 78082 images
+downloaded 22640 / 78082 images
+downloaded 22660 / 78082 images
+downloaded 22680 / 78082 images
+downloaded 22700 / 78082 images
+downloaded 22720 / 78082 images
+downloaded 22740 / 78082 images
+downloaded 22760 / 78082 images
+downloaded 22780 / 78082 images
+downloaded 22800 / 78082 images
+downloaded 22820 / 78082 images
+downloaded 22840 / 78082 images
+downloaded 22860 / 78082 images
+downloaded 22880 / 78082 images
+downloaded 22900 / 78082 images
+downloaded 22920 / 78082 images
+downloaded 22940 / 78082 images
+downloaded 22960 / 78082 images
+downloaded 22980 / 78082 images
+downloaded 23000 / 78082 images
+downloaded 23020 / 78082 images
+downloaded 23040 / 78082 images
+downloaded 23060 / 78082 images
+downloaded 23080 / 78082 images
+downloaded 23100 / 78082 images
+downloaded 23120 / 78082 images
+downloaded 23140 / 78082 images
+downloaded 23160 / 78082 images
+downloaded 23180 / 78082 images
+downloaded 23200 / 78082 images
+downloaded 23220 / 78082 images
+downloaded 23240 / 78082 images
+downloaded 23260 / 78082 images
+downloaded 23280 / 78082 images
+downloaded 23300 / 78082 images
+downloaded 23320 / 78082 images
+downloaded 23340 / 78082 images
+downloaded 23360 / 78082 images
+downloaded 23380 / 78082 images
+downloaded 23400 / 78082 images
+downloaded 23420 / 78082 images
+downloaded 23440 / 78082 images
+downloaded 23460 / 78082 images
+downloaded 23480 / 78082 images
+downloaded 23500 / 78082 images
+downloaded 23520 / 78082 images
+downloaded 23540 / 78082 images
+downloaded 23560 / 78082 images
+downloaded 23580 / 78082 images
+downloaded 23600 / 78082 images
+downloaded 23620 / 78082 images
+downloaded 23640 / 78082 images
+downloaded 23660 / 78082 images
+downloaded 23680 / 78082 images
+downloaded 23700 / 78082 images
+downloaded 23720 / 78082 images
+downloaded 23740 / 78082 images
+downloaded 23760 / 78082 images
+downloaded 23780 / 78082 images
+downloaded 23800 / 78082 images
+downloaded 23820 / 78082 images
+downloaded 23840 / 78082 images
+downloaded 23860 / 78082 images
+downloaded 23880 / 78082 images
+downloaded 23900 / 78082 images
+downloaded 23920 / 78082 images
+downloaded 23940 / 78082 images
+downloaded 23960 / 78082 images
+downloaded 23980 / 78082 images
+downloaded 24000 / 78082 images
+downloaded 24020 / 78082 images
+downloaded 24040 / 78082 images
+downloaded 24060 / 78082 images
+downloaded 24080 / 78082 images
+downloaded 24100 / 78082 images
+downloaded 24120 / 78082 images
+downloaded 24140 / 78082 images
+downloaded 24160 / 78082 images
+downloaded 24180 / 78082 images
+downloaded 24200 / 78082 images
+downloaded 24220 / 78082 images
+downloaded 24240 / 78082 images
+downloaded 24260 / 78082 images
+downloaded 24280 / 78082 images
+downloaded 24300 / 78082 images
+downloaded 24320 / 78082 images
+downloaded 24340 / 78082 images
+downloaded 24360 / 78082 images
+downloaded 24380 / 78082 images
+downloaded 24400 / 78082 images
+downloaded 24420 / 78082 images
+downloaded 24440 / 78082 images
+downloaded 24460 / 78082 images
+downloaded 24480 / 78082 images
+downloaded 24500 / 78082 images
+downloaded 24520 / 78082 images
+downloaded 24540 / 78082 images
+downloaded 24560 / 78082 images
+downloaded 24580 / 78082 images
+downloaded 24600 / 78082 images
+downloaded 24620 / 78082 images
+downloaded 24640 / 78082 images
+downloaded 24660 / 78082 images
+downloaded 24680 / 78082 images
+downloaded 24700 / 78082 images
+downloaded 24720 / 78082 images
+downloaded 24740 / 78082 images
+downloaded 24760 / 78082 images
+downloaded 24780 / 78082 images
+downloaded 24800 / 78082 images
+downloaded 24820 / 78082 images
+downloaded 24840 / 78082 images
+downloaded 24860 / 78082 images
+downloaded 24880 / 78082 images
+downloaded 24900 / 78082 images
+downloaded 24920 / 78082 images
+downloaded 24940 / 78082 images
+downloaded 24960 / 78082 images
+downloaded 24980 / 78082 images
+downloaded 25000 / 78082 images
+downloaded 25020 / 78082 images
+downloaded 25040 / 78082 images
+downloaded 25060 / 78082 images
+downloaded 25080 / 78082 images
+downloaded 25100 / 78082 images
+downloaded 25120 / 78082 images
+Traceback (most recent call last):
+  File "/opt/conda/envs/clipseg-environment/lib/python3.11/site-packages/urllib3/connection.py", line 200, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/clipseg-environment/lib/python3.11/site-packages/urllib3/util/connection.py", line 85, in create_connection
+    raise err
+  File "/opt/conda/envs/clipseg-environment/lib/python3.11/site-packages/urllib3/util/connection.py", line 73, in create_connection
+    sock.connect(sa)
+TimeoutError: [Errno 110] Connection timed out alaaalaaal holoolororrorololo
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/conda/envs/clipseg-environment/lib/python3.11/site-packages/urllib3/connectionpool.py", line 790, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/clipseg-environment/lib/python3.11/site-packages/urllib3/connectionpool.py", line 491, in _make_request
+    raise new_e
+  File "/opt/conda/envs/clipseg-environment/lib/python3.11/site-packages/urllib3/connectionpool.py", line 467, in _make_request
+    self._validate_conn(conn)
+  File "/opt/conda/envs/clipseg-environment/lib/python3.11/site-packages/urllib3/connectionpool.py", line 1092, in _validate_conn
+    conn.connect()
+  File "/opt/conda/envs/clipseg-environment/lib/python3.11/site-packages/urllib3/connection.py", line 604, in connect
+    self.sock = sock = self._new_conn()
+                       ^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/clipseg-environment/lib/python3.11/site-packages/urllib3/connection.py", line 209, in _new_conn
+    raise ConnectTimeoutError(
+urllib3.exceptions.ConnectTimeoutError: (<urllib3.connection.HTTPSConnection object at 0x7f28f6c3f410>, 'Connection to cs.stanford.edu timed out. (connect timeout=None)')
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/conda/envs/clipseg-environment/lib/python3.11/site-packages/requests/adapters.py", line 486, in send
+    resp = conn.urlopen(
+           ^^^^^^^^^^^^^
+  File "/opt/conda/envs/clipseg-environment/lib/python3.11/site-packages/urllib3/connectionpool.py", line 844, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/clipseg-environment/lib/python3.11/site-packages/urllib3/util/retry.py", line 515, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPSConnectionPool(host='cs.stanford.edu', port=443): Max retries exceeded with url: /people/rak248/VG_100K_2/2396257.jpg (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x7f28f6c3f410>, 'Connection to cs.stanford.edu timed out. (connect timeout=None)'))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/download_dataset.py", line 95, in <module>
+    main()
+  File "/opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/download_dataset.py", line 90, in main
+    download_images(splits)
+  File "/opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/download_dataset.py", line 64, in download_images
+    download(url, os.path.join(img_fpath, fname))
+  File "/opt/ml/level3_cv_finalproject-cv-09/clipseg/third_party/PhraseCutDataset/download_dataset.py", line 11, in download
+    myfile = requests.get(url, allow_redirects=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/clipseg-environment/lib/python3.11/site-packages/requests/api.py", line 73, in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/clipseg-environment/lib/python3.11/site-packages/requests/api.py", line 59, in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/clipseg-environment/lib/python3.11/site-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/clipseg-environment/lib/python3.11/site-packages/requests/sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/conda/envs/clipseg-environment/lib/python3.11/site-packages/requests/adapters.py", line 507, in send
+    raise ConnectTimeout(e, request=request)
+requests.exceptions.ConnectTimeout: HTTPSConnectionPool(host='cs.stanford.edu', port=443): Max retries exceeded with url: /people/rak248/VG_100K_2/2396257.jpg (Caused by ConnectTimeoutError(<urllib3.connection.HTTPSConnection object at 0x7f28f6c3f410>, 'Connection to cs.stanford.edu timed out. (connect timeout=None)'))
