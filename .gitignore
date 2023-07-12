@@ -7,3 +7,5 @@ clipseg/third_party/PhraseCutDataset/data/
 .vscode
 */nohup.out
 *.ipynb
+logs
+.empty
