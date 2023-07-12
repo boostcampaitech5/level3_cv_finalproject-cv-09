@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import zipfile
 import shutil
-import datetime
+from collections import defaultdict
 import cv2
 from pytz import timezone
 from transformers import CLIPSegProcessor, CLIPSegForImageSegmentation
@@ -25,7 +25,19 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 @app.on_event("startup")
 async def startup_event():
-
+    
+    app.ID = str('')
+    app.TASK = str('')
+    app.IMAGE_NUM = defaultdict(int)
+    
+    path_list = []
+    path_list.append(f'{FOLDER_DIR}/original/')
+    path_list.append(f'{FOLDER_DIR}/segment/')
+    path_list.append(f'{FOLDER_DIR}/zip/')
+    for path in path_list:
+        if not os.path.isdir(path):
+            os.mkdir(path)
+            
     app.state.colors = [
     (0, 0, 0),
     (0.8196078431372549, 0.2901960784313726, 0.25882352941176473),
@@ -54,6 +66,7 @@ async def startup_event():
     # clip_seg load code
     app.state.processor = CLIPSegProcessor.from_pretrained("CIDAS/clipseg-rd64-refined")
     app.state.model = CLIPSegForImageSegmentation.from_pretrained("CIDAS/clipseg-rd64-refined")
+    
     
 @torch.no_grad()
 async def segment_everything(
@@ -121,54 +134,63 @@ def clip_segmentation(image, label_list):
 @app.post('/zip_upload/')
 async def zip_upload(id: str = Form(...),
                      files: UploadFile = File(...)):
+    file_name = (files.filename).split('.')[0]
+    app.ID = id
+    app.TASK = file_name
+    app.IMAGE_NUM[id] = -1
     content = await files.read()
     
+    ZIP_PATH = f'{FOLDER_DIR}/zip/{id}'
+    SEG_PATH = f'{FOLDER_DIR}/segment/{id}'
     # Try to make a directory
     if not os.path.isdir(FOLDER_DIR):
         os.mkdir(FOLDER_DIR)
-    
     # Write the files in the file
-    file_name = id + '-' + str(datetime.datetime.now(timezone('Asia/Seoul')))
+    if not os.path.isdir(ZIP_PATH):
+        os.mkdir(ZIP_PATH)
     print(file_name)
-    with open(f'{FOLDER_DIR}/zip/{file_name}.zip', 'wb') as f:
+    with open(f'{ZIP_PATH}/{file_name}.zip', 'wb') as f:
         f.write(content)
     f.close()
-    zipfile.ZipFile(f'{FOLDER_DIR}/zip/{file_name}.zip').extractall(f'data/original/{file_name}')
-    
-    # To erase MAC dummy file
-    # dummy = FOLDER_DIR + '/__MACOSX'
-    # if os.path.isdir(dummy):
-    #     shutil.rmtree(dummy)
-
+    zipfile.ZipFile(f'{ZIP_PATH}/{file_name}.zip').extractall(f'data/original/{id}/{file_name}')
+    if not os.path.isdir(SEG_PATH):
+        os.mkdir(SEG_PATH)
 # Implement Model
 
 @app.get('/segment/')
 async def segment():
-    original_list = os.listdir(f'{FOLDER_DIR}/original/')
-    segment_list = os.listdir(f'{FOLDER_DIR}/segment/')
-    if original_list == segment_list:
-        print('Segment is already done!')
-    else:
-        for element in original_list:
-            file_list = os.listdir(f'{FOLDER_DIR}/original/{element}')
-            for file in file_list:
-                # print(f'{element}/{file}')
-                # print(datetime.datetime.now(timezone('Asia/Seoul')))
-                img = Image.open(f'data/original/{element}/{file}')
-                output = await segment_everything(img, 1024)
-                output = output.convert("RGB")
-                if not os.path.isdir(f'data/segment/{element}'):
-                    os.mkdir(f'data/segment/{element}')
-                output.save(f"data/segment/{element}/{file}")
-                # print(datetime.datetime.now(timezone('Asia/Seoul')))
-    output = FileResponse(f'{FOLDER_DIR}/segment/{segment_list[0]}/1.jpg', media_type='image/jpg')
-    return output
+    id = app.ID
+    app.IMAGE_NUM[id] += 1
+    file_name = app.TASK
+    image_num = app.IMAGE_NUM[id]
+    file_list = os.listdir(f'{FOLDER_DIR}/original/{id}/{file_name}')
+    if len(file_list) - 1 < image_num :
+        image_num = len(file_list) - 1
+        
+    img = Image.open(f'{FOLDER_DIR}/original/{id}/{file_name}/{file_list[image_num]}')
+    output = await segment_everything(img, 1024)
+    output = output.convert("RGB")
+    if not os.path.isdir(f'{FOLDER_DIR}/segment/{id}/{file_name}'):
+        os.mkdir(f'{FOLDER_DIR}/segment/{id}/{file_name}')
+    output.save(f'{FOLDER_DIR}/segment/{id}/{file_name}/{file_list[image_num]}')
+    seg_img = FileResponse(f'{FOLDER_DIR}/segment/{id}/{file_name}/{file_list[image_num]}', media_type='image/jpg')
+    
+    return seg_img
 
-@app.post('/remove/')
+@app.get('/remove/')
 def remove():
-    path = ''
-    if os.path.isdir(path):
-        shutil.rmtree(path)
+    id = app.ID
+    app.IMAGE_NUM[id] = -1
+    if id == '' :
+        return 0
+    path_list = []
+    path_list.append(f'{FOLDER_DIR}/original/{id}')
+    path_list.append(f'{FOLDER_DIR}/segment/{id}')
+    path_list.append(f'{FOLDER_DIR}/zip/{id}')
+    for path in path_list:
+        print(path)
+        if os.path.isdir(path):
+            shutil.rmtree(path)
 
 # @app.post('/predict/')
 # def predict(image_id: str, prompts: str):
