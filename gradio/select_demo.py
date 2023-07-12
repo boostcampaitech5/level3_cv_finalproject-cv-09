@@ -24,35 +24,22 @@ colors = [
 ]
 
 
-# def zip_to_json(file_obj):
-#     files = []
-#     print(file_obj.name)
-#     with ZipFile(file_obj.name) as zfile:
-#         for zinfo in zfile.infolist():
-#             files.append(
-#                 zinfo.filename,
-#             )
-#         print(zfile)
-#     return files
-
-
-
 def zip_upload(file_obj, id):
-    #
-    # f = ZipFile(file_obj.name, "r")
-    # with ZipFile(file_obj.name) as zfile:
-    #     files = {"files": zfile}
     data = {"id": str(id)}
     with open(file_obj.name, "rb") as f:
         files = {"files": f}
         res = requests.post(
-            "http://115.85.182.123:30008/zip_upload/", data=data, files=files,
+            "http://115.85.182.123:30008/zip_upload/",
+            data=data,
+            files=files,
         )
     return res.status_code
+
 
 def segment():
     res = requests.get("http://115.85.182.123:30008/segment/")
     return Image.open(io.BytesIO(res.content))
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -136,7 +123,7 @@ cond_img_e = gr.Image(label="Input", value=default_example[0], type="pil")
 segm_img_e = gr.Image(label="Mobile SAM Image", interactive=False, type="pil")
 id = gr.Textbox()
 clipseg_img_e = gr.Image(
-    label="Clip_Segmentation Image", interactive=True, image_mode="RGBA"
+    label="Clip_Segmentation Image", interactive=False, image_mode="RGBA"
 )
 
 input_size_slider = gr.components.Slider(
@@ -151,13 +138,11 @@ input_size_slider = gr.components.Slider(
 with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
     with gr.Row():
         with gr.Column(scale=1):
-            # Title
             gr.Markdown(title)
     with gr.Tab("file upload Tab"):
         gr.Interface(zip_upload, inputs=["file", id], outputs="text")
         label_list = gr.Textbox(interactive=True)
-    with gr.Tab("Everything mode"):
-        # Images
+    with gr.Tab("Annotation Tab"):
         cond_img_e.render()
         with gr.Row(variant="panel"):
             with gr.Column(scale=1):
@@ -166,12 +151,10 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
             with gr.Column(scale=1):
                 label_checkbox = gr.CheckboxGroup(
                     choices=[],
-                    value=["swam", "slept"],
                     label="select label in present image",
                     interactive=True,
                 )
                 clipseg_btn_e = gr.Button("clip_segmentation", variant="primary")
-        # Submit & Clear
         with gr.Row():
             with gr.Column(scale=1):
                 segm_img_e.render()
@@ -182,7 +165,12 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
             with gr.Column():
                 clipseg_img_e.render()
         with gr.Row():
-            coord_value = gr.Textbox()
+            with gr.Column(scale=2):
+                coord_value = gr.Textbox()
+            with gr.Column(scale=1):
+                next_btn_e = gr.Button("next", variant="secondary")
+            with gr.Column(scale=1):
+                request_btn_e = gr.Button("request", variant="secondary")
 
     # segment_btn_e.click(
     #     segment_everything,
@@ -192,6 +180,7 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
     #     ],
     #     outputs=[segm_img_e],
     # )
+
 
     segment_btn_e.click(
         segment,
@@ -211,9 +200,3 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
     )
 demo.queue()
 demo.launch()
-
-"""
-이미지를 원본이랑 마스크로 분리, 
-modified_img_e 이미지 select 될때 마우스 좌표를 
-마스크 이미지에 적용, 해당 픽셀의 값 반환 
-"""
