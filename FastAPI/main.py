@@ -118,15 +118,6 @@ def clip_segmentation(image, label_list):
     blended = cv2.addWeighted(image, 0.5, output, 0.5, 0, dtype=cv2.CV_8UC3)
     return np.clip(blended, 0, 255)
 
-# class Log(BaseModel):
-#     log: str
-
-# class Segment(BaseModel):
-#     input_size_slider: int
-
-class User(BaseModel):
-    id: str
-
 @app.post('/zip_upload/')
 async def zip_upload(id: str = Form(...),
                      files: UploadFile = File(...)):
@@ -153,14 +144,31 @@ async def zip_upload(id: str = Form(...),
 
 @app.get('/segment/')
 async def segment():
-    zip_list = os.listdir(f'{FOLDER_DIR}/zip')
-    original_list = os.listdir(f'{FOLDER_DIR}/original')
-    
-    img = Image.open(f'{FOLDER_DIR}/test/1.jpg')
-    output = await segment_everything(img, 1024)
-    output = output.convert("RGB")
-    output.save("data/segment/predict.jpg")
-    return FileResponse(f'{FOLDER_DIR}/segment/prdict.jpg')
+    original_list = os.listdir(f'{FOLDER_DIR}/original/')
+    segment_list = os.listdir(f'{FOLDER_DIR}/segment/')
+    if original_list == segment_list:
+        print('Segment is already done!')
+    else:
+        for element in original_list:
+            file_list = os.listdir(f'{FOLDER_DIR}/original/{element}')
+            for file in file_list:
+                # print(f'{element}/{file}')
+                # print(datetime.datetime.now(timezone('Asia/Seoul')))
+                img = Image.open(f'data/original/{element}/{file}')
+                output = await segment_everything(img, 1024)
+                output = output.convert("RGB")
+                if not os.path.isdir(f'data/segment/{element}'):
+                    os.mkdir(f'data/segment/{element}')
+                output.save(f"data/segment/{element}/{file}")
+                # print(datetime.datetime.now(timezone('Asia/Seoul')))
+    output = FileResponse(f'{FOLDER_DIR}/segment/{segment_list[0]}/1.jpg', media_type='image/jpg')
+    return output
+
+@app.post('/remove/')
+def remove():
+    path = ''
+    if os.path.isdir(path):
+        shutil.rmtree(path)
 
 # @app.post('/predict/')
 # def predict(image_id: str, prompts: str):

@@ -52,7 +52,7 @@ def zip_upload(file_obj, id):
 
 def segment():
     res = requests.get("http://115.85.182.123:30008/segment/")
-    return res.status_code
+    return Image.open(io.BytesIO(res.content))
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -194,7 +194,8 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
     # )
 
     segment_btn_e.click(
-        segment
+        segment,
+        outputs=[segm_img_e]
     )
     
     segm_img_e.select(get_points, inputs=[segm_img_e], outputs=[coord_value])
