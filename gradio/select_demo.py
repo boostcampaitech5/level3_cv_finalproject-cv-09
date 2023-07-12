@@ -1,6 +1,7 @@
 import gradio as gr
 import numpy as np
 import torch
+import io
 from mobile_sam import SamAutomaticMaskGenerator, SamPredictor, sam_model_registry
 from utils.tools_gradio import fast_process
 
@@ -36,19 +37,22 @@ colors = [
 
 
 
-def zip_to_json(file_obj, id):
+def zip_upload(file_obj, id):
     #
     # f = ZipFile(file_obj.name, "r")
     # with ZipFile(file_obj.name) as zfile:
     #     files = {"files": zfile}
+    data = {"id": str(id)}
     with open(file_obj.name, "rb") as f:
         files = {"files": f}
-        data = {"data": id}
         res = requests.post(
-            "http://115.85.182.123:30008/zip_upload/", files=files, data=data
+            "http://115.85.182.123:30008/zip_upload/", data=data, files=files,
         )
     return res.status_code
 
+def segment():
+    res = requests.get("http://115.85.182.123:30008/segment/")
+    return res.status_code
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -150,7 +154,7 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
             # Title
             gr.Markdown(title)
     with gr.Tab("file upload Tab"):
-        gr.Interface(zip_to_json, inputs=["file", id], outputs="text")
+        gr.Interface(zip_upload, inputs=["file", id], outputs="text")
         label_list = gr.Textbox(interactive=True)
     with gr.Tab("Everything mode"):
         # Images
@@ -180,14 +184,19 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
         with gr.Row():
             coord_value = gr.Textbox()
 
+    # segment_btn_e.click(
+    #     segment_everything,
+    #     inputs=[
+    #         cond_img_e,
+    #         input_size_slider,
+    #     ],
+    #     outputs=[segm_img_e],
+    # )
+
     segment_btn_e.click(
-        segment_everything,
-        inputs=[
-            cond_img_e,
-            input_size_slider,
-        ],
-        outputs=[segm_img_e],
+        segment
     )
+    
     segm_img_e.select(get_points, inputs=[segm_img_e], outputs=[coord_value])
     # clipseg_btn_e.click(
     #     clip_segmentation, inputs=[cond_img_e, label_checkbox], outputs=[clipseg_img_e]
