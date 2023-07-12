@@ -9,7 +9,7 @@ import cv2
 from pytz import timezone
 from transformers import CLIPSegProcessor, CLIPSegForImageSegmentation
 from utils.tools_gradio import fast_process
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from PIL import Image
@@ -118,17 +118,18 @@ def clip_segmentation(image, label_list):
     blended = cv2.addWeighted(image, 0.5, output, 0.5, 0, dtype=cv2.CV_8UC3)
     return np.clip(blended, 0, 255)
 
-class Log(BaseModel):
-    log: str
+# class Log(BaseModel):
+#     log: str
 
-class Segment(BaseModel):
-    input_size_slider: int
+# class Segment(BaseModel):
+#     input_size_slider: int
 
 class User(BaseModel):
     id: str
 
 @app.post('/zip_upload/')
-async def zip_upload(id: int, files: UploadFile = File(...)):
+async def zip_upload(id: str = Form(...),
+                     files: UploadFile = File(...)):
     content = await files.read()
     
     # Try to make a directory
@@ -136,13 +137,12 @@ async def zip_upload(id: int, files: UploadFile = File(...)):
         os.mkdir(FOLDER_DIR)
     
     # Write the files in the file
-    # id = item.id
-    file_name = str(datetime.datetime.now(timezone('Asia/Seoul'))) + str(id)
+    file_name = id + '-' + str(datetime.datetime.now(timezone('Asia/Seoul')))
     print(file_name)
     with open(f'{FOLDER_DIR}/zip/{file_name}.zip', 'wb') as f:
         f.write(content)
     f.close()
-    zipfile.ZipFile(f'{FOLDER_DIR}/zip/{file_name}.zip').extractall('data/original/{file_name}')
+    zipfile.ZipFile(f'{FOLDER_DIR}/zip/{file_name}.zip').extractall(f'data/original/{file_name}')
     
     # To erase MAC dummy file
     # dummy = FOLDER_DIR + '/__MACOSX'

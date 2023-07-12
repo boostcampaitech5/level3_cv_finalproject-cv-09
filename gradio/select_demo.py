@@ -37,16 +37,16 @@ colors = [
 
 
 
-def zip_to_json(file_obj, id):
+def zip_upload(file_obj, id):
     #
     # f = ZipFile(file_obj.name, "r")
     # with ZipFile(file_obj.name) as zfile:
     #     files = {"files": zfile}
+    data = {"id": str(id)}
     with open(file_obj.name, "rb") as f:
         files = {"files": f}
-        data = {"data": id}
         res = requests.post(
-            "http://115.85.182.123:30008/zip_upload/", files=files, data=data
+            "http://115.85.182.123:30008/zip_upload/", data=data, files=files,
         )
     return res.status_code
 
@@ -154,7 +154,7 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
             # Title
             gr.Markdown(title)
     with gr.Tab("file upload Tab"):
-        gr.Interface(zip_to_json, inputs=["file", id], outputs="text")
+        gr.Interface(zip_upload, inputs=["file", id], outputs="text")
         label_list = gr.Textbox(interactive=True)
     with gr.Tab("Everything mode"):
         # Images
