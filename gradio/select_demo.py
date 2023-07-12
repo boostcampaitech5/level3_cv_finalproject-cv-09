@@ -119,7 +119,7 @@ def get_points(image, evt: gr.SelectData):
     return x, y, pixels[x, y]
 
 
-cond_img_e = gr.Image(label="Input", value=default_example[0], type="pil")
+cond_img_e = gr.Image(label="Input", type="pil")
 segm_img_e = gr.Image(label="Mobile SAM Image", interactive=False, type="pil")
 id = gr.Textbox()
 clipseg_img_e = gr.Image(
@@ -156,22 +156,22 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
                 )
                 clipseg_btn_e = gr.Button("clip_segmentation", variant="primary")
         with gr.Row():
-            with gr.Column(scale=1):
-                segm_img_e.render()
-                with gr.Row():
-                    add_btn_e = gr.Button("add", variant="secondary")
-                    delete_btn_e = gr.Button("delete", variant="secondary")
-
-            with gr.Column():
+            with gr.Tab("Grounding Dino"):
                 clipseg_img_e.render()
+            with gr.Tab("Segment Everything"):
+                segm_img_e.render()
+
         with gr.Row():
             with gr.Column(scale=2):
-                coord_value = gr.Textbox()
+                add_btn_e = gr.Button("add", variant="secondary")
+                delete_btn_e = gr.Button("delete", variant="secondary")
+
             with gr.Column(scale=1):
                 next_btn_e = gr.Button("next", variant="secondary")
             with gr.Column(scale=1):
                 request_btn_e = gr.Button("request", variant="secondary")
-
+        with gr.Row():
+            coord_value = gr.Textbox()
     # segment_btn_e.click(
     #     segment_everything,
     #     inputs=[
@@ -181,12 +181,8 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
     #     outputs=[segm_img_e],
     # )
 
+    segment_btn_e.click(segment, outputs=[segm_img_e])
 
-    segment_btn_e.click(
-        segment,
-        outputs=[segm_img_e]
-    )
-    
     segm_img_e.select(get_points, inputs=[segm_img_e], outputs=[coord_value])
     # clipseg_btn_e.click(
     #     clip_segmentation, inputs=[cond_img_e, label_checkbox], outputs=[clipseg_img_e]
