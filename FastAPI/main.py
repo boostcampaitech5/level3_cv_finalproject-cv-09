@@ -160,7 +160,7 @@ async def segment():
     output = await segment_everything(img, 1024)
     output = output.convert("RGB")
     output.save("data/segment/predict.jpg")
-    return 0
+    return FileResponse(f'{FOLDER_DIR}/segment/prdict.jpg')
 
 # @app.post('/predict/')
 # def predict(image_id: str, prompts: str):
