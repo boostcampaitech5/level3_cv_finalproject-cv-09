@@ -2,16 +2,14 @@ import os
 import gradio as gr
 import numpy as np
 import io
-from utils.tools_gradio import fast_process
-
 from PIL import Image
 from zipfile import ZipFile
 import requests
 
 
 def zip_upload(file_obj, id):
-    with ZipFile(file_obj, "r") as f:
-        f.extractall(f"temp_zip/{id}")
+    with ZipFile(file_obj.name, "r") as f:
+        f.extractall(f"data/{id}")
     data = {"id": str(id)}
     with open(file_obj.name, "rb") as f:
         files = {"files": f}
@@ -20,7 +18,7 @@ def zip_upload(file_obj, id):
             data=data,
             files=files,
         )
-    return res.status_code
+    return os.listdir(f"data/{id}")
 
 
 def segment(id, img_path):
@@ -67,6 +65,7 @@ def get_points(image, evt: gr.SelectData):
 cond_img_e = gr.Image(label="Input", type="pil")
 segm_img_e = gr.Image(label="Mobile SAM Image", interactive=False, type="pil")
 id = gr.Textbox()
+
 grounding_dino_SAM_img_e = gr.Image(
     label="Clip_Segmentation Image", interactive=False, image_mode="RGBA"
 )
@@ -126,7 +125,7 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
     #     outputs=[segm_img_e],
     # )
 
-    segment_btn_e.click(segment, inputs=[], outputs=[segm_img_e])
+    segment_btn_e.click(segment, inputs=[id, cond_img_e], outputs=[segm_img_e])
 
     # next_btn_e.click(
 
