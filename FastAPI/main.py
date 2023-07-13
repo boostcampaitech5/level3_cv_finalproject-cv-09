@@ -4,8 +4,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import zipfile
 import shutil
-from collections import defaultdict
 import cv2
+import json
+from collections import defaultdict
 from pytz import timezone
 from transformers import CLIPSegProcessor, CLIPSegForImageSegmentation
 from utils.tools_gradio import fast_process
@@ -31,6 +32,7 @@ async def startup_event():
     app.IMAGE_NUM = defaultdict(int)
     
     path_list = []
+    path_list.append(f'{FOLDER_DIR}/')
     path_list.append(f'{FOLDER_DIR}/original/')
     path_list.append(f'{FOLDER_DIR}/segment/')
     path_list.append(f'{FOLDER_DIR}/zip/')
@@ -142,20 +144,19 @@ async def zip_upload(id: str = Form(...),
     
     ZIP_PATH = f'{FOLDER_DIR}/zip/{id}'
     SEG_PATH = f'{FOLDER_DIR}/segment/{id}'
-    # Try to make a directory
-    if not os.path.isdir(FOLDER_DIR):
-        os.mkdir(FOLDER_DIR)
-    # Write the files in the file
+    
     if not os.path.isdir(ZIP_PATH):
         os.mkdir(ZIP_PATH)
-    print(file_name)
+        
+    # Make zip file in 'data/zip/'
     with open(f'{ZIP_PATH}/{file_name}.zip', 'wb') as f:
         f.write(content)
     f.close()
+    # Extract original file from zip file
     zipfile.ZipFile(f'{ZIP_PATH}/{file_name}.zip').extractall(f'data/original/{id}/{file_name}')
+    
     if not os.path.isdir(SEG_PATH):
         os.mkdir(SEG_PATH)
-# Implement Model
 
 @app.get('/segment/')
 async def segment():
@@ -164,6 +165,7 @@ async def segment():
     file_name = app.TASK
     image_num = app.IMAGE_NUM[id]
     file_list = os.listdir(f'{FOLDER_DIR}/original/{id}/{file_name}')
+    # Adjust index
     if len(file_list) - 1 < image_num :
         image_num = len(file_list) - 1
         
@@ -176,6 +178,18 @@ async def segment():
     seg_img = FileResponse(f'{FOLDER_DIR}/segment/{id}/{file_name}/{file_list[image_num]}', media_type='image/jpg')
     
     return seg_img
+
+@app.get('/json_download/')
+def json_download():
+    id = app.ID
+    test_json = {}
+    test_json['obj1'] = []
+    test_json['obj1'].append({'location' : [1, 2, 3, 4]})
+
+    with open(f'{FOLDER_DIR}/segment/{id}/test.json', 'w') as f:
+        json.dump(test_json, f)
+    
+    return test_json
 
 @app.get('/remove/')
 def remove():
