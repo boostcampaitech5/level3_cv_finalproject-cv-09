@@ -17,41 +17,33 @@ from torchvision import transforms
 from models.clip_seg import CLIPDensePredT
 from mobile_sam import SamAutomaticMaskGenerator, SamPredictor, sam_model_registry
 
-FOLDER_DIR = '/opt/ml/level3_cv_finalproject-cv-09/FastAPI/data'
+FOLDER_DIR = "/opt/ml/level3_cv_finalproject-cv-09/FastAPI/data"
 
 app = FastAPI()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+
 @app.on_event("startup")
 async def startup_event():
-    
-    app.ID = str('')
-    app.TASK = str('')
+    app.ID = str("")
+    app.TASK = str("")
     app.IMAGE_NUM = defaultdict(int)
-    
-    path_list = []
-    path_list.append(f'{FOLDER_DIR}/original/')
-    path_list.append(f'{FOLDER_DIR}/segment/')
-    path_list.append(f'{FOLDER_DIR}/zip/')
-    for path in path_list:
-        if not os.path.isdir(path):
-            os.mkdir(path)
-            
+
     app.state.colors = [
-    (0, 0, 0),
-    (0.8196078431372549, 0.2901960784313726, 0.25882352941176473),
-    (0.42745098039215684, 0.9490196078431372, 0.2),
-    (0.9490196078431372, 0.9254901960784314, 0.8862745098039215),
-    (0.5764705882352941, 0.19607843137254902, 0.6235294117647059),
-    (0.0196078431372549, 0.41568627450980394, 0.9725490196078431),
-    (0.3764705882352941, 0.20784313725490197, 0.09411764705882353),
-    (0.12156862745098039, 0.4745098039215686, 0.38823529411764707),
-    (0.00392156862745098, 0.34901960784313724, 0.01568627450980392),
-    (0.4470588235294118, 0.00392156862745098, 0.03137254901960784),
-    (0.32941176470588235, 0.34901960784313724, 0.7607843137254902),
+        (0, 0, 0),
+        (0.8196078431372549, 0.2901960784313726, 0.25882352941176473),
+        (0.42745098039215684, 0.9490196078431372, 0.2),
+        (0.9490196078431372, 0.9254901960784314, 0.8862745098039215),
+        (0.5764705882352941, 0.19607843137254902, 0.6235294117647059),
+        (0.0196078431372549, 0.41568627450980394, 0.9725490196078431),
+        (0.3764705882352941, 0.20784313725490197, 0.09411764705882353),
+        (0.12156862745098039, 0.4745098039215686, 0.38823529411764707),
+        (0.00392156862745098, 0.34901960784313724, 0.01568627450980392),
+        (0.4470588235294118, 0.00392156862745098, 0.03137254901960784),
+        (0.32941176470588235, 0.34901960784313724, 0.7607843137254902),
     ]
-    
+
     # Load the pre-trained model
     sam_checkpoint = "weights/mobile_sam.pt"
     model_type = "vit_t"
@@ -62,12 +54,14 @@ async def startup_event():
 
     app.state.mask_generator = SamAutomaticMaskGenerator(mobile_sam)
     app.state.predictor = SamPredictor(mobile_sam)
-    
+
     # clip_seg load code
     app.state.processor = CLIPSegProcessor.from_pretrained("CIDAS/clipseg-rd64-refined")
-    app.state.model = CLIPSegForImageSegmentation.from_pretrained("CIDAS/clipseg-rd64-refined")
-    
-    
+    app.state.model = CLIPSegForImageSegmentation.from_pretrained(
+        "CIDAS/clipseg-rd64-refined"
+    )
+
+
 @torch.no_grad()
 async def segment_everything(
     image,
@@ -96,9 +90,10 @@ async def segment_everything(
         better_quality=better_quality,
         mask_random_color=mask_random_color,
         bbox=None,
-        use_retina=use_retina
+        use_retina=use_retina,
     )
     return fig
+
 
 @torch.no_grad()
 def clip_segmentation(image, label_list):
@@ -131,17 +126,26 @@ def clip_segmentation(image, label_list):
     blended = cv2.addWeighted(image, 0.5, output, 0.5, 0, dtype=cv2.CV_8UC3)
     return np.clip(blended, 0, 255)
 
-@app.post('/zip_upload/')
-async def zip_upload(id: str = Form(...),
-                     files: UploadFile = File(...)):
-    file_name = (files.filename).split('.')[0]
+
+@app.post("/zip_upload/")
+async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
+    path_list = []
+    path_list.append(f"{FOLDER_DIR}/{id}/original/")
+    path_list.append(f"{FOLDER_DIR}/{id}/segment/")
+    path_list.append(f"{FOLDER_DIR}/{id}/zip/")
+
+    for path in path_list:
+        if not os.path.isdir(path):
+            os.mkdir(path)
+
+    file_name = (files.filename).split(".")[0]
     app.ID = id
     app.TASK = file_name
     app.IMAGE_NUM[id] = -1
     content = await files.read()
-    
-    ZIP_PATH = f'{FOLDER_DIR}/zip/{id}'
-    SEG_PATH = f'{FOLDER_DIR}/segment/{id}'
+
+    ZIP_PATH = f"{FOLDER_DIR}/{id}/zip"
+    SEG_PATH = f"{FOLDER_DIR}/{id}/segment"
     # Try to make a directory
     if not os.path.isdir(FOLDER_DIR):
         os.mkdir(FOLDER_DIR)
@@ -149,48 +153,58 @@ async def zip_upload(id: str = Form(...),
     if not os.path.isdir(ZIP_PATH):
         os.mkdir(ZIP_PATH)
     print(file_name)
-    with open(f'{ZIP_PATH}/{file_name}.zip', 'wb') as f:
+    with open(f"{ZIP_PATH}/{file_name}.zip", "wb") as f:
         f.write(content)
     f.close()
-    zipfile.ZipFile(f'{ZIP_PATH}/{file_name}.zip').extractall(f'data/original/{id}/{file_name}')
+    zipfile.ZipFile(f"{ZIP_PATH}/{file_name}.zip").extractall(
+        f"data/{id}/original/{file_name}"
+    )
     if not os.path.isdir(SEG_PATH):
         os.mkdir(SEG_PATH)
+
+
 # Implement Model
 
-@app.get('/segment/')
-async def segment():
-    id = app.ID
-    app.IMAGE_NUM[id] += 1
-    file_name = app.TASK
-    image_num = app.IMAGE_NUM[id]
-    file_list = os.listdir(f'{FOLDER_DIR}/original/{id}/{file_name}')
-    if len(file_list) - 1 < image_num :
-        image_num = len(file_list) - 1
-        
-    img = Image.open(f'{FOLDER_DIR}/original/{id}/{file_name}/{file_list[image_num]}')
-    output = await segment_everything(img, 1024)
+
+@app.get("/segment/")
+async def segment(path: str = Form(...)):
+    id, file_name = path.split("/")
+    # app.IMAGE_NUM[id] += 1
+    # file_name = app.TASK
+    # image_num = app.IMAGE_NUM[id]
+    # file_list = os.listdir(f"{FOLDER_DIR}/{id}/original/{file_name}")
+    # if len(file_list) - 1 < image_num:
+    #    image_num = len(file_list) - 1
+
+    img = Image.open(f"{FOLDER_DIR}/{id}/original/{file_name}")
+    output = await segment_everything(img)
     output = output.convert("RGB")
-    if not os.path.isdir(f'{FOLDER_DIR}/segment/{id}/{file_name}'):
-        os.mkdir(f'{FOLDER_DIR}/segment/{id}/{file_name}')
-    output.save(f'{FOLDER_DIR}/segment/{id}/{file_name}/{file_list[image_num]}')
-    seg_img = FileResponse(f'{FOLDER_DIR}/segment/{id}/{file_name}/{file_list[image_num]}', media_type='image/jpg')
-    
+    if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/{file_name}"):
+        os.mkdir(f"{FOLDER_DIR}/{id}/segment/{file_name}")
+    output.save(f"{FOLDER_DIR}/{id}/segment/{file_name}")
+    seg_img = FileResponse(
+        f"{FOLDER_DIR}/{id}/segment/{file_name}",
+        media_type="image/jpg",
+    )
+
     return seg_img
 
-@app.get('/remove/')
+
+@app.get("/remove/")
 def remove():
     id = app.ID
     app.IMAGE_NUM[id] = -1
-    if id == '' :
+    if id == "":
         return 0
     path_list = []
-    path_list.append(f'{FOLDER_DIR}/original/{id}')
-    path_list.append(f'{FOLDER_DIR}/segment/{id}')
-    path_list.append(f'{FOLDER_DIR}/zip/{id}')
+    path_list.append(f"{FOLDER_DIR}/{id}/original")
+    path_list.append(f"{FOLDER_DIR}/{id}/segment")
+    path_list.append(f"{FOLDER_DIR}/{id}/zip")
     for path in path_list:
         print(path)
         if os.path.isdir(path):
             shutil.rmtree(path)
+
 
 # @app.post('/predict/')
 # def predict(image_id: str, prompts: str):
@@ -198,7 +212,7 @@ def remove():
 #     model.eval()
 
 #     model.load_state_dict(torch.load('weights/rd64-uni-refined.pth', map_location=torch.device('cpu')), strict=False);
-    
+
 #     FOLDER = FOLDER_DIR + f'{image_id}'
 #     if not os.path.isdir(FOLDER):
 #         os.mkdir(FOLDER)
@@ -211,9 +225,9 @@ def remove():
 #     plt.axis('off')
 #     plt.imshow(output)
 #     plt.savefig(path)
-    
+
 #     return FileResponse(path)
-    
+
 # Download the result
 
 # @app.get('/download/{image_id}')
@@ -223,7 +237,7 @@ def remove():
 #     path = os.path.join(FOLDER, file_name)
 #     return FileResponse(path)
 
-    
+
 # Send Feedback
 
 # @app.post('/log/{image_id}')
