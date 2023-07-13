@@ -33,16 +33,24 @@ def zip_upload(file_obj, id):
             data=data,
             files=files,
         )
-    return res.status_code
+    if res.status_code == 200:
+        return 'Upload Success'
+    else : return res.status_code
 
 
 def segment():
     res = requests.get("http://115.85.182.123:30008/segment/")
     return Image.open(io.BytesIO(res.content))
 
+def json_download():
+    res = requests.get("http://115.85.182.123:30008/json_download/")
+    return res.content
+
 def remove():
     res = requests.get("http://115.85.182.123:30008/remove/")
-    return res.status_code
+    if res.status_code == 200:
+        return 'Remove Success'
+    else : return res.status_code
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
