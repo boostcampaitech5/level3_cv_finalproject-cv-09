@@ -126,7 +126,7 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
     #     outputs=[segm_img_e],
     # )
 
-    segment_btn_e.click(segment, inputs=[], outputs=[segm_img_e])
+    segment_btn_e.click(segment, inputs=[id, cond_img_e], outputs=[segm_img_e])
 
     # next_btn_e.click(
 
