@@ -18,21 +18,36 @@ Language Segment-Anything is an open-source project that combines the power of i
 - Python 3.7 or higher
 - torch (tested 2.0)
 - torchvision
+- requirements.txt
 
 ### Installation
-
+https://developer.nvidia.com/cuda-toolkit-archive  
+nvidia-smi에 맞는 cuda-toolkit 다운로드  
+Driver Version: 450.80.02   CUDA Version: 11.0  
+이런식으로 나오는데 Driver Version이랑 젤 비슷한거로 깔면 됩니다.
 ```
-pip install torch torchvision
-pip install -U git+https://github.com/luca-medeiros/lang-segment-anything.git
+# cuda-toolkit
+wget https://developer.download.nvidia.com/compute/cuda/11.0.3/local_installers/cuda_11.0.3_450.51.06_linux.run
+sh cuda_11.0.3_450.51.06_linux.run
+
+# cuda-toolkit 디렉토리 경로 확인
+ls -lh /usr/local | grep cuda
+
+# 환경변수 설정 (위에서 확인한 경로로 변경해서 지정해주세요)
+export PATH=$PATH:/usr/local/cuda-11.0/bin
+export CUDA_PATH=/usr/local/cuda-11.0
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda-11.0/lib64
+export CUDADIR=/usr/local/cuda-11.0
 ```
 
-Or
-Clone the repository and nstall the required packages:
-
+### GPU 버전 GrooundingDINO 설치
+Grounded_SAM 클론 후에 GroundingDINO 설치해주시면 됩니다.  
+이후 Grounded-Segment-Anything 디렉토리는 삭제해도 무방
 ```
-git clone https://github.com/luca-medeiros/lang-segment-anything && cd lang-segment-anything
-pip install torch torchvision
-pip install -e .
+git clone https://github.com/IDEA-Research/Grounded-Segment-Anything.git
+export AM_I_DOCKER=False
+export BUILD_WITH_CUDA=True
+python -m pip install -e GroundingDINO
 ```
 
 ### Usage

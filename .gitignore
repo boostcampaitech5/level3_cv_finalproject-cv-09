@@ -7,3 +7,4 @@ clipseg/third_party/PhraseCutDataset/data/
 .vscode
 */nohup.out
 *.ipynb
+lang-segment-anything/Grounded-Segment-Anything

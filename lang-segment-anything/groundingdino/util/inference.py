@@ -1,12 +1,12 @@
 from typing import Tuple, List
 
+import re
 import cv2
 import numpy as np
 import supervision as sv
 import torch
 from PIL import Image
 from torchvision.ops import box_convert
-import bisect
 
 import groundingdino.datasets.transforms as T
 from groundingdino.models import build_model
@@ -56,8 +56,7 @@ def predict(
         caption: str,
         box_threshold: float,
         text_threshold: float,
-        device: str = "cuda",
-        remove_combined: bool = False
+        device: str = "cuda"
 ) -> Tuple[torch.Tensor, torch.Tensor, List[str]]:
     caption = preprocess_caption(caption=caption)
 
@@ -76,23 +75,12 @@ def predict(
 
     tokenizer = model.tokenizer
     tokenized = tokenizer(caption)
-    
-    if remove_combined:
-        sep_idx = [i for i in range(len(tokenized['input_ids'])) if tokenized['input_ids'][i] in [101, 102, 1012]]
-        
-        phrases = []
-        for logit in logits:
-            max_idx = logit.argmax()
-            insert_idx = bisect.bisect_left(sep_idx, max_idx)
-            right_idx = sep_idx[insert_idx]
-            left_idx = sep_idx[insert_idx - 1]
-            phrases.append(get_phrases_from_posmap(logit > text_threshold, tokenized, tokenizer, left_idx, right_idx).replace('.', ''))
-    else:
-        phrases = [
-            get_phrases_from_posmap(logit > text_threshold, tokenized, tokenizer).replace('.', '')
-            for logit
-            in logits
-        ]
+
+    phrases = [
+        get_phrases_from_posmap(logit > text_threshold, tokenized, tokenizer).replace('.', '')
+        for logit
+        in logits
+    ]
 
     return boxes, logits.max(dim=1)[0], phrases
 
@@ -250,10 +238,20 @@ class Model:
     def phrases2classes(phrases: List[str], classes: List[str]) -> np.ndarray:
         class_ids = []
         for phrase in phrases:
-            for class_ in classes:
-                if class_ in phrase:
-                    class_ids.append(classes.index(class_))
-                    break
-            else:
+            try:
+                # class_ids.append(classes.index(phrase))
+                class_ids.append(Model.find_index(phrase, classes))
+            except ValueError:
                 class_ids.append(None)
         return np.array(class_ids)
+
+    @staticmethod
+    def find_index(string, lst):
+        # if meet string like "lake river" will only keep "lake"
+        # this is an hack implementation for visualization which will be updated in the future
+        string = string.lower().split()[0]
+        for i, s in enumerate(lst):
+            if string in s.lower():
+                return i
+        print("There's a wrong phrase happen, this is because of our post-process merged wrong tokens, which will be modified in the future. We will assign it with a random label at this time.")
+        return 0
