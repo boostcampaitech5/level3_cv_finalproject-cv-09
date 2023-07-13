@@ -4,8 +4,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import zipfile
 import shutil
-from collections import defaultdict
 import cv2
+import json
+from collections import defaultdict
 from pytz import timezone
 from transformers import CLIPSegProcessor, CLIPSegForImageSegmentation
 from utils.tools_gradio import fast_process
@@ -157,7 +158,7 @@ async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
         f.write(content)
     f.close()
     zipfile.ZipFile(f"{ZIP_PATH}/{file_name}.zip").extractall(
-        f"data/{id}/original/{file_name}"
+        f"data/original/{id}/{file_name}"
     )
     if not os.path.isdir(SEG_PATH):
         os.mkdir(SEG_PATH)
