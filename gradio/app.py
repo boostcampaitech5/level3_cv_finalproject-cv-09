@@ -2,7 +2,6 @@ import os
 import gradio as gr
 import numpy as np
 import io
-from utils.tools_gradio import fast_process
 
 from PIL import Image
 from zipfile import ZipFile
@@ -20,7 +19,7 @@ def zip_upload(file_obj, id):
             data=data,
             files=files,
         )
-    return res.status_code
+    return os.listdir(f"temp_zip/{id}")
 
 
 def segment(id, img_path):
