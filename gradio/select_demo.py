@@ -1,15 +1,12 @@
 import gradio as gr
 import numpy as np
 import torch
+import io
 from mobile_sam import SamAutomaticMaskGenerator, SamPredictor, sam_model_registry
 from utils.tools_gradio import fast_process
 
 from PIL import Image
 from zipfile import ZipFile
-
-# clipSeg 관련 import
-from transformers import CLIPSegProcessor, CLIPSegForImageSegmentation
-import cv2
 import requests
 
 colors = [
@@ -27,25 +24,25 @@ colors = [
 ]
 
 
-# def zip_to_json(file_obj):
-#     files = []
-#     print(file_obj.name)
-#     with ZipFile(file_obj.name) as zfile:
-#         for zinfo in zfile.infolist():
-#             files.append(
-#                 zinfo.filename,
-#             )
-#         print(zfile)
-#     return files
-
-
-def zip_to_json(file_obj):
+def zip_upload(file_obj, id):
+    data = {"id": str(id)}
     with open(file_obj.name, "rb") as f:
         files = {"files": f}
-        res = requests.post("http://115.85.182.123:30008/zip_upload/", files=files)
-
+        res = requests.post(
+            "http://115.85.182.123:30008/zip_upload/",
+            data=data,
+            files=files,
+        )
     return res.status_code
 
+
+def segment():
+    res = requests.get("http://115.85.182.123:30008/segment/")
+    return Image.open(io.BytesIO(res.content))
+
+def remove():
+    res = requests.get("http://115.85.182.123:30008/remove/")
+    return res.status_code
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -59,10 +56,6 @@ mobile_sam.eval()
 
 mask_generator = SamAutomaticMaskGenerator(mobile_sam)
 predictor = SamPredictor(mobile_sam)
-
-# clip_seg load code
-processor = CLIPSegProcessor.from_pretrained("CIDAS/clipseg-rd64-refined")
-model = CLIPSegForImageSegmentation.from_pretrained("CIDAS/clipseg-rd64-refined")
 
 # Description
 title = "<center><strong><font size='8'>Faster Segment Anything(MobileSAM)<font></strong></center>"
@@ -129,43 +122,11 @@ def get_points(image, evt: gr.SelectData):
     return x, y, pixels[x, y]
 
 
-@torch.no_grad()
-def clip_segmentation(image, label_list):
-    inputs = processor(
-        text=label_list,
-        images=[image] * len(label_list),
-        padding="max_length",
-        return_tensors="pt",
-    )
-    outputs = model(**inputs)
-
-    preds = outputs.logits.unsqueeze(1).cpu()
-    flat_preds = torch.sigmoid(preds.squeeze()).reshape((preds.shape[0], -1))
-    flat_preds_with_treshold = torch.full(
-        (preds.shape[0] + 1, flat_preds.shape[-1]), 0.5
-    )  # threshold 변경 필요
-    flat_preds_with_treshold[1 : preds.shape[0] + 1, :] = flat_preds
-    inds = torch.topk(flat_preds_with_treshold, 1, dim=0).indices
-
-    temp_list = []
-    for i in inds.squeeze():
-        temp_list.append(colors[i])
-    image = cv2.resize(np.array(image), (preds.shape[-2], preds.shape[-1]))
-    output = (
-        np.array(temp_list)
-        .T.reshape(3, preds.shape[-2], preds.shape[-1])
-        .transpose(1, 2, 0)
-        * 255
-    )
-    blended = cv2.addWeighted(image, 0.5, output, 0.5, 0, dtype=cv2.CV_8UC3)
-    return np.clip(blended, 0, 255)
-
-
-cond_img_e = gr.Image(label="Input", value=default_example[0], type="pil")
+cond_img_e = gr.Image(label="Input", type="pil")
 segm_img_e = gr.Image(label="Mobile SAM Image", interactive=False, type="pil")
-
+id = gr.Textbox()
 clipseg_img_e = gr.Image(
-    label="Clip_Segmentation Image", interactive=True, image_mode="RGBA"
+    label="Clip_Segmentation Image", interactive=False, image_mode="RGBA"
 )
 
 input_size_slider = gr.components.Slider(
@@ -180,13 +141,11 @@ input_size_slider = gr.components.Slider(
 with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
     with gr.Row():
         with gr.Column(scale=1):
-            # Title
             gr.Markdown(title)
-    with gr.Tab("Tab test"):
-        gr.Interface(zip_to_json, "file", "text")
+    with gr.Tab("file upload Tab"):
+        gr.Interface(zip_upload, inputs=["file", id], outputs="text")
         label_list = gr.Textbox(interactive=True)
-    with gr.Tab("Everything mode"):
-        # Images
+    with gr.Tab("Annotation Tab"):
         cond_img_e.render()
         with gr.Row(variant="panel"):
             with gr.Column(scale=1):
@@ -195,36 +154,53 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
             with gr.Column(scale=1):
                 label_checkbox = gr.CheckboxGroup(
                     choices=[],
-                    value=["swam", "slept"],
                     label="select label in present image",
                     interactive=True,
                 )
                 clipseg_btn_e = gr.Button("clip_segmentation", variant="primary")
-        # Submit & Clear
         with gr.Row():
-            with gr.Column(scale=1):
-                segm_img_e.render()
-                with gr.Row():
-                    add_btn_e = gr.Button("add", variant="secondary")
-                    delete_btn_e = gr.Button("delete", variant="secondary")
-
-            with gr.Column():
+            with gr.Tab("Grounding Dino"):
                 clipseg_img_e.render()
+            with gr.Tab("Segment Everything"):
+                segm_img_e.render()
+
+        with gr.Row():
+            with gr.Column(scale=2):
+                add_btn_e = gr.Button("add", variant="secondary")
+                delete_btn_e = gr.Button("delete", variant="secondary")
+
+            with gr.Column(scale=1):
+                next_btn_e = gr.Button("next", variant="secondary")
+            with gr.Column(scale=1):
+                request_btn_e = gr.Button("request", variant="secondary")
         with gr.Row():
             coord_value = gr.Textbox()
+    # segment_btn_e.click(
+    #     segment_everything,
+    #     inputs=[
+    #         cond_img_e,
+    #         input_size_slider,
+    #     ],
+    #     outputs=[segm_img_e],
+    # )
 
     segment_btn_e.click(
-        segment_everything,
-        inputs=[
-            cond_img_e,
-            input_size_slider,
-        ],
-        outputs=[segm_img_e],
+        segment,
+        outputs=[segm_img_e]
     )
+    
+    # next_btn_e.click(
+        
+    # )
+    
+    request_btn_e.click(
+        remove
+    )
+    
     segm_img_e.select(get_points, inputs=[segm_img_e], outputs=[coord_value])
-    clipseg_btn_e.click(
-        clip_segmentation, inputs=[cond_img_e, label_checkbox], outputs=[clipseg_img_e]
-    )
+    # clipseg_btn_e.click(
+    #     clip_segmentation, inputs=[cond_img_e, label_checkbox], outputs=[clipseg_img_e]
+    # )
     label_list.change(
         fn=lambda value: label_checkbox.update(
             choices=value.replace(", ", ",").split(",")
@@ -234,9 +210,3 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
     )
 demo.queue()
 demo.launch()
-
-"""
-이미지를 원본이랑 마스크로 분리, 
-modified_img_e 이미지 select 될때 마우스 좌표를 
-마스크 이미지에 적용, 해당 픽셀의 값 반환 
-"""

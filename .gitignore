@@ -8,3 +8,5 @@ clipseg/third_party/PhraseCutDataset/data/
 */nohup.out
 *.ipynb
 lang-segment-anything/Grounded-Segment-Anything
+logs
+.empty
