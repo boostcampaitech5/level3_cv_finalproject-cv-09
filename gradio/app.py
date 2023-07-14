@@ -1,30 +1,15 @@
+import os
 import gradio as gr
 import numpy as np
-import torch
 import io
-from mobile_sam import SamAutomaticMaskGenerator, SamPredictor, sam_model_registry
-from utils.tools_gradio import fast_process
-
 from PIL import Image
 from zipfile import ZipFile
 import requests
 
-colors = [
-    (0, 0, 0),
-    (0.8196078431372549, 0.2901960784313726, 0.25882352941176473),
-    (0.42745098039215684, 0.9490196078431372, 0.2),
-    (0.9490196078431372, 0.9254901960784314, 0.8862745098039215),
-    (0.5764705882352941, 0.19607843137254902, 0.6235294117647059),
-    (0.0196078431372549, 0.41568627450980394, 0.9725490196078431),
-    (0.3764705882352941, 0.20784313725490197, 0.09411764705882353),
-    (0.12156862745098039, 0.4745098039215686, 0.38823529411764707),
-    (0.00392156862745098, 0.34901960784313724, 0.01568627450980392),
-    (0.4470588235294118, 0.00392156862745098, 0.03137254901960784),
-    (0.32941176470588235, 0.34901960784313724, 0.7607843137254902),
-]
-
 
 def zip_upload(file_obj, id):
+    with ZipFile(file_obj.name, "r") as f:
+        f.extractall(f"data/{id}")
     data = {"id": str(id)}
     with open(file_obj.name, "rb") as f:
         files = {"files": f}
@@ -33,37 +18,25 @@ def zip_upload(file_obj, id):
             data=data,
             files=files,
         )
-    return res.status_code
+    return os.listdir(f"data/{id}")
 
 
-def segment():
-    res = requests.get("http://115.85.182.123:30008/segment/")
+def segment(id, img_path):
+    data = {"path": os.path.join(str(id), str(img_path))}
+    res = requests.post("http://115.85.182.123:30008/segment/", data=data)
     return Image.open(io.BytesIO(res.content))
+
 
 def remove():
     res = requests.get("http://115.85.182.123:30008/remove/")
     return res.status_code
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# mobile_Sam load code
-sam_checkpoint = "weights/mobile_sam.pt"
-model_type = "vit_t"
-
-mobile_sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
-mobile_sam = mobile_sam.to(device=device)
-mobile_sam.eval()
-
-mask_generator = SamAutomaticMaskGenerator(mobile_sam)
-predictor = SamPredictor(mobile_sam)
 
 # Description
 title = "<center><strong><font size='8'>Faster Segment Anything(MobileSAM)<font></strong></center>"
 
 description_e = """This is a demo of [Faster Segment Anything(MobileSAM) Model](https://github.com/ChaoningZhang/MobileSAM).
-
                    We will provide box mode soon. 
-
                    Enjoy!
                 
               """
@@ -83,39 +56,6 @@ default_example = examples[0]
 css = "h1 { text-align: center } .about { text-align: justify; padding-left: 10%; padding-right: 10%; }"
 
 
-@torch.no_grad()
-def segment_everything(
-    image,
-    input_size=1024,
-    better_quality=True,
-    use_retina=True,
-    mask_random_color=True,
-):
-    global mask_generator
-
-    input_size = int(input_size)
-    w, h = image.size
-    scale = input_size / max(w, h)
-    new_w = int(w * scale)
-    new_h = int(h * scale)
-    image = image.resize((new_w, new_h))
-
-    nd_image = np.array(image)
-    annotations = mask_generator.generate(nd_image)
-
-    fig = fast_process(
-        annotations=annotations,
-        image=image,
-        device=device,
-        scale=(1024 // input_size),
-        better_quality=better_quality,
-        mask_random_color=mask_random_color,
-        bbox=None,
-        use_retina=use_retina,
-    )
-    return fig
-
-
 def get_points(image, evt: gr.SelectData):
     x, y = evt.index[0], evt.index[1]
     pixels = image.load()
@@ -125,7 +65,8 @@ def get_points(image, evt: gr.SelectData):
 cond_img_e = gr.Image(label="Input", type="pil")
 segm_img_e = gr.Image(label="Mobile SAM Image", interactive=False, type="pil")
 id = gr.Textbox()
-clipseg_img_e = gr.Image(
+
+grounding_dino_SAM_img_e = gr.Image(
     label="Clip_Segmentation Image", interactive=False, image_mode="RGBA"
 )
 
@@ -160,18 +101,18 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
                 clipseg_btn_e = gr.Button("clip_segmentation", variant="primary")
         with gr.Row():
             with gr.Tab("Grounding Dino"):
-                clipseg_img_e.render()
+                grounding_dino_SAM_img_e.render()
             with gr.Tab("Segment Everything"):
                 segm_img_e.render()
 
         with gr.Row():
-            with gr.Column(scale=2):
+            with gr.Column():
                 add_btn_e = gr.Button("add", variant="secondary")
+            with gr.Column():
                 delete_btn_e = gr.Button("delete", variant="secondary")
-
-            with gr.Column(scale=1):
+            with gr.Column():
                 next_btn_e = gr.Button("next", variant="secondary")
-            with gr.Column(scale=1):
+            with gr.Column():
                 request_btn_e = gr.Button("request", variant="secondary")
         with gr.Row():
             coord_value = gr.Textbox()
@@ -184,19 +125,14 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
     #     outputs=[segm_img_e],
     # )
 
-    segment_btn_e.click(
-        segment,
-        outputs=[segm_img_e]
-    )
-    
+    segment_btn_e.click(segment, inputs=[id, cond_img_e], outputs=[segm_img_e])
+
     # next_btn_e.click(
-        
+
     # )
-    
-    request_btn_e.click(
-        remove
-    )
-    
+
+    request_btn_e.click(remove)
+
     segm_img_e.select(get_points, inputs=[segm_img_e], outputs=[coord_value])
     # clipseg_btn_e.click(
     #     clip_segmentation, inputs=[cond_img_e, label_checkbox], outputs=[clipseg_img_e]

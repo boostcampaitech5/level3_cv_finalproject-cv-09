@@ -10,3 +10,6 @@ clipseg/third_party/PhraseCutDataset/data/
 lang-segment-anything/Grounded-Segment-Anything
 logs
 .empty
+*.jpg
+*.png
+*.zip
