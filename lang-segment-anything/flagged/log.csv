@@ -1,3 +1,0 @@
-SAM model,Box threshold,Text threshold,Image,Text Prompt,Output Image,flag,username,timestamp
-vit_h,0.3,0.25,/opt/ml/level3_cv_finalproject-cv-09/lang-segment-anything/flagged/Image/afa6228719af55de5da26da9cf0583d47e75a0e2/tmp13y4he2l.jpg,"dog, trash, bar, carrier",,,,2023-07-11 09:42:48.650982
-vit_h,0.3,0.25,/opt/ml/level3_cv_finalproject-cv-09/lang-segment-anything/flagged/Image/78ce04406407937bcea5172f5ceab9f4eb317f6a/tmpd_3wci0c.jpg,dog,,,,2023-07-11 09:43:05.665938

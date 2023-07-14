@@ -21,7 +21,8 @@ Language Segment-Anything is an open-source project that combines the power of i
 - requirements.txt
 
 ### Installation
-https://developer.nvidia.com/cuda-toolkit-archive  
+참고블로그 : https://nirsa.tistory.com/332  
+cuda-toolkit : https://developer.nvidia.com/cuda-toolkit-archive  
 nvidia-smi에 맞는 cuda-toolkit 다운로드  
 Driver Version: 450.80.02   CUDA Version: 11.0  
 이런식으로 나오는데 Driver Version이랑 젤 비슷한거로 깔면 됩니다.
