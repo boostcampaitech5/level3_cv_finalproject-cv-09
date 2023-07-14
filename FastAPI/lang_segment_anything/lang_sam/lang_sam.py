@@ -29,7 +29,7 @@ def load_model_hf(repo_id, filename, ckpt_config_filename, device='cpu'):
     args.device = device
 
     cache_file = hf_hub_download(repo_id=repo_id, filename=filename)
-    checkpoint = torch.load(cache_file, map_location='cpu')
+    checkpoint = torch.load(cache_file, map_location='cuda')
     log = model.load_state_dict(clean_state_dict(checkpoint['model']), strict=False)
     print(f"Model loaded from {cache_file} \n => {log}")
     model.eval()
@@ -49,9 +49,9 @@ def transform_image(image) -> torch.Tensor:
 
 class LangSAM():
 
-    def __init__(self, sam_type="vit_h"):
+    def __init__(self, sam_type="vit_h", device='cpu'):
         self.sam_type = sam_type
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
         self.build_groundingdino()
         self.build_sam(sam_type)
 
@@ -69,10 +69,11 @@ class LangSAM():
         self.sam = SamPredictor(sam)
 
     def build_groundingdino(self):
+        print("asdfasdf")
         ckpt_repo_id = "ShilongLiu/GroundingDINO"
         ckpt_filename = "groundingdino_swinb_cogcoor.pth"
         ckpt_config_filename = "GroundingDINO_SwinB.cfg.py"
-        self.groundingdino = load_model_hf(ckpt_repo_id, ckpt_filename, ckpt_config_filename)
+        self.groundingdino = load_model_hf(ckpt_repo_id, ckpt_filename, ckpt_config_filename, device = self.device)
 
     def predict_dino(self, image_pil, text_prompt, box_threshold, text_threshold):
         image_trans = transform_image(image_pil)

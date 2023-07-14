@@ -16,10 +16,10 @@ from pydantic import BaseModel
 from PIL import Image
 from torchvision import transforms
 from mobile_sam import SamAutomaticMaskGenerator, SamPredictor, sam_model_registry
-from lang_sam import LangSAM
-from lang_sam import SAM_MODELS
-from lang_sam.utils import draw_image
-from lang_sam.utils import load_image
+from lang_segment_anything.lang_sam import LangSAM
+from lang_segment_anything.lang_sam import SAM_MODELS
+from lang_segment_anything.lang_sam.utils import draw_image
+from lang_segment_anything.lang_sam.utils import load_image
 
 
 FOLDER_DIR = "data"
@@ -64,8 +64,8 @@ async def startup_event():
     # )
     
     # Lang-SAM load
-    app.state.lang_sam = LangSAM(sam_type="vit_h").to(device=device)
-    app.state.lang_sam.eval()
+    app.state.lang_sam = LangSAM(sam_type="vit_h", device = device)
+    app.state.lang_sam
     
 
 
@@ -102,7 +102,7 @@ async def segment_everything(
     return fig
 
 @torch.no_grad()
-async def segment_text(box_threshold = 0.3, text_threshold = 0.3, image_path, text_prompt):
+async def segment_text(box_threshold = 0.3, text_threshold = 0.3, image_path = "", text_prompt = "sky"):
     image_pil = load_image(image_path)
     masks, boxes, phrases, logits = app.state.lang_sam.predict(image_pil, text_prompt, box_threshold, text_threshold)
     labels = [f"{phrase} {logit:.2f}" for phrase, logit in zip(phrases, logits)]
@@ -169,19 +169,8 @@ async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
 @app.post("/segment/")
 async def segment(path: str = Form(...)):
     id, file_name = path.split("/")
-<<<<<<< HEAD
-    # app.IMAGE_NUM[id] += 1
-    # file_name = app.TASK
-    # image_num = app.IMAGE_NUM[id]
-    # file_list = os.listdir(f"{FOLDER_DIR}/{id}/original/{file_name}")
-    # if len(file_list) - 1 < image_num:
-    #    image_num = len(file_list) - 1
-
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
     img = Image.open(img_path)
-=======
-    img = Image.open(f"{FOLDER_DIR}/{id}/original/{file_name}")
->>>>>>> d1da9bfff64ec0e3f33ac9c182130ac4ed84840a
     output = await segment_everything(img)
     output = output.convert("RGB")
     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
@@ -191,14 +180,23 @@ async def segment(path: str = Form(...)):
         f"{FOLDER_DIR}/{id}/segment/{file_name}",
         media_type="image/jpg",
     )
-    
-    text_seg_output = await segment_text(box_threshold, text_threshold, img_path, text_prompt)
-    text_seg_output.save(f"{FOLDER_DIR}/{id}/segment/{file_name}_dino")
+    return seg_img
+
+@app.post("/segment_text/")
+async def segment_text(path: str = Form(...)):
+    box_threshold, text_threshold = 0.3, 0.3
+    id, file_name = path.split("/")
+    img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
+    text_seg_output = await segment_text(box_threshold, text_threshold, img_path, text_prompt = ['dog . trash'])
+    if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
+        os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
+    text_seg_output.save(f"{FOLDER_DIR}/{id}/segment/dino_{file_name}")
     seg_dino_img = FileResponse(
-        f"{FOLDER_DIR}/{id}/segment/{file_name}_dino",
+        f"{FOLDER_DIR}/{id}/segment/dino_{file_name}",
         media_type="image/jpg",
     )
-    return seg_img, seg_dino_img
+    return seg_dino_img
+    
 
 
 @app.post("/remove/")
