@@ -9,3 +9,6 @@ clipseg/third_party/PhraseCutDataset/data/
 *.ipynb
 logs
 .empty
+*.jpg
+*.png
+*.zip

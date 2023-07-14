@@ -15,10 +15,9 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from PIL import Image
 from torchvision import transforms
-from models.clip_seg import CLIPDensePredT
 from mobile_sam import SamAutomaticMaskGenerator, SamPredictor, sam_model_registry
 
-FOLDER_DIR = "/opt/ml/level3_cv_finalproject-cv-09/FastAPI/data"
+FOLDER_DIR = "data"
 
 app = FastAPI()
 
@@ -131,13 +130,13 @@ def clip_segmentation(image, label_list):
 @app.post("/zip_upload/")
 async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
     path_list = []
-    path_list.append(f"{FOLDER_DIR}/{id}/original/")
-    path_list.append(f"{FOLDER_DIR}/{id}/segment/")
-    path_list.append(f"{FOLDER_DIR}/{id}/zip/")
+    path_list.append(f"{FOLDER_DIR}/{id}/original")
+    path_list.append(f"{FOLDER_DIR}/{id}/segment")
+    path_list.append(f"{FOLDER_DIR}/{id}/zip")
 
     for path in path_list:
         if not os.path.isdir(path):
-            os.mkdir(path)
+            os.makedirs(path, exist_ok=True)
 
     file_name = (files.filename).split(".")[0]
     app.ID = id
@@ -146,27 +145,13 @@ async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
     content = await files.read()
 
     ZIP_PATH = f"{FOLDER_DIR}/{id}/zip"
-    SEG_PATH = f"{FOLDER_DIR}/{id}/segment"
-    # Try to make a directory
-    if not os.path.isdir(FOLDER_DIR):
-        os.mkdir(FOLDER_DIR)
-    # Write the files in the file
-    if not os.path.isdir(ZIP_PATH):
-        os.mkdir(ZIP_PATH)
-    print(file_name)
+
     with open(f"{ZIP_PATH}/{file_name}.zip", "wb") as f:
         f.write(content)
-    f.close()
-    zipfile.ZipFile(f"{ZIP_PATH}/{file_name}.zip").extractall(
-        f"data/original/{id}/{file_name}"
-    )
-    if not os.path.isdir(SEG_PATH):
-        os.mkdir(SEG_PATH)
+    zipfile.ZipFile(f"{ZIP_PATH}/{file_name}.zip").extractall(f"data/{id}/original")
 
 
 # Implement Model
-
-
 @app.get("/segment/")
 async def segment(path: str = Form(...)):
     id, file_name = path.split("/")
