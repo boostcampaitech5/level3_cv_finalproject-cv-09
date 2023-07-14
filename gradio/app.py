@@ -6,6 +6,7 @@ from PIL import Image
 from zipfile import ZipFile
 import requests
 
+
 def zip_upload(file_obj, id):
     with ZipFile(file_obj.name, "r") as f:
         f.extractall(f"data/{id}")
@@ -19,7 +20,7 @@ def zip_upload(file_obj, id):
         )
     return os.listdir(f"data/{id}")
 
- ########################### 기능 통합 필요 ##############3#############
+
 def start_annotation(img_list):
     global img_iter
     img_iter = iter(img_list)
@@ -33,32 +34,18 @@ def next_img():
 
 def viz_img(id, path):
     personal_path = f"{id}/{path}"
-    return Image.open(os.path.join("data", personal_path))
+    return Image.open(os.path.join("data", personal_path)), segment(id, path)
 
-def seg(id):
-    global i
-    i = 0
-    return segment(id, i)
 
-def next(id):
-    global i
-    i += 1
-    return segment(id, i)
-
-def segment(id, index):
-    file_list = os.listdir(f"data/{id}")
-    if index > len(file_list) - 1:
-        index = len(file_list) - 1
-    img_path = file_list[index]
+def segment(id, img_path):
     data = {"path": os.path.join(str(id), str(img_path))}
     res = requests.post("http://115.85.182.123:30008/segment/", data=data)
     return Image.open(io.BytesIO(res.content))
-################################################################
+
 
 def remove(id):
     data = {"id": str(id)}
-    res = requests.post("http://115.85.182.123:30008/remove/",
-                        data=data)
+    res = requests.post("http://115.85.182.123:30008/remove/", data=data)
     return res.status_code
 
 
@@ -73,6 +60,7 @@ description_e = """This is a demo of [Faster Segment Anything(MobileSAM) Model](
 
 css = "h1 { text-align: center } .about { text-align: justify; padding-left: 10%; padding-right: 10%; }"
 
+
 def get_points(image, evt: gr.SelectData):
     x, y = evt.index[0], evt.index[1]
     pixels = image.load()
@@ -83,7 +71,9 @@ cond_img_e = gr.Image(label="Input", type="pil")
 segm_img_e = gr.Image(label="Mobile SAM Image", interactive=False, type="pil")
 id = gr.Textbox()
 img_list = gr.JSON()
-img_iter = None
+img_iter = None  # ["img1.jpg", .... ]
+# next(img_iter)
+
 grounding_dino_SAM_img_e = gr.Image(
     label="Clip_Segmentation Image", interactive=False, image_mode="RGBA"
 )
@@ -131,11 +121,9 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
         with gr.Row():
             coord_value = gr.Textbox()
 
-    # 기능 통합 필요 - lbong2 ############################
     next_btn_e.click(next_img, outputs=present_img)
-    next_btn_e.click(next, inputs=[id], outputs=[segm_img_e])
-    #######################################
-    segment_btn_e.click(seg, inputs=[id], outputs=[segm_img_e])
+    # next_btn_e.click(next, inputs=[id], outputs=[segm_img_e])
+    # segment_btn_e.click(seg, inputs=[id], outputs=[segm_img_e])
 
     request_btn_e.click(remove, inputs=[id])
 
@@ -153,7 +141,9 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
         inputs=img_list,
         outputs=present_img,
     )
-    present_img.change(fn=viz_img, inputs=[id, present_img], outputs=cond_img_e)
+    present_img.change(
+        fn=viz_img, inputs=[id, present_img], outputs=[cond_img_e, segm_img_e]
+    )
 
 demo.queue()
 demo.launch()
