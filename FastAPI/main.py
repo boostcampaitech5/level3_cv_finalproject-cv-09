@@ -16,6 +16,11 @@ from pydantic import BaseModel
 from PIL import Image
 from torchvision import transforms
 from mobile_sam import SamAutomaticMaskGenerator, SamPredictor, sam_model_registry
+from lang_sam import LangSAM
+from lang_sam import SAM_MODELS
+from lang_sam.utils import draw_image
+from lang_sam.utils import load_image
+
 
 FOLDER_DIR = "data"
 
@@ -56,10 +61,15 @@ async def startup_event():
     app.state.predictor = SamPredictor(mobile_sam)
 
     # clip_seg load code
-    app.state.processor = CLIPSegProcessor.from_pretrained("CIDAS/clipseg-rd64-refined")
-    app.state.model = CLIPSegForImageSegmentation.from_pretrained(
-        "CIDAS/clipseg-rd64-refined"
-    )
+    # app.state.processor = CLIPSegProcessor.from_pretrained("CIDAS/clipseg-rd64-refined")
+    # app.state.model = CLIPSegForImageSegmentation.from_pretrained(
+    #     "CIDAS/clipseg-rd64-refined"
+    # )
+    
+    # Lang-SAM load
+    app.state.lang_sam = LangSAM(sam_type="vit_h").to(device=device)
+    app.state.lang_sam.eval()
+    
 
 
 @torch.no_grad()
@@ -94,37 +104,47 @@ async def segment_everything(
     )
     return fig
 
-
 @torch.no_grad()
-def clip_segmentation(image, label_list):
-    inputs = app.state.processor(
-        text=label_list,
-        images=[image] * len(label_list),
-        padding="max_length",
-        return_tensors="pt",
-    )
-    outputs = app.state.model(**inputs)
+async def segment_text(box_threshold = 0.3, text_threshold = 0.3, image_path, text_prompt):
+    image_pil = load_image(image_path)
+    masks, boxes, phrases, logits = app.state.lang_sam.predict(image_pil, text_prompt, box_threshold, text_threshold)
+    labels = [f"{phrase} {logit:.2f}" for phrase, logit in zip(phrases, logits)]
+    print("masks : ", len(masks))
+    image_array = np.asarray(image_pil)
+    image = draw_image(image_array, masks, boxes, labels)
+    image = Image.fromarray(np.uint8(image)).convert("RGB")
+    return image
 
-    preds = outputs.logits.unsqueeze(1).cpu()
-    flat_preds = torch.sigmoid(preds.squeeze()).reshape((preds.shape[0], -1))
-    flat_preds_with_treshold = torch.full(
-        (preds.shape[0] + 1, flat_preds.shape[-1]), 0.5
-    )  # threshold 변경 필요
-    flat_preds_with_treshold[1 : preds.shape[0] + 1, :] = flat_preds
-    inds = torch.topk(flat_preds_with_treshold, 1, dim=0).indices
+# @torch.no_grad()
+# def clip_segmentation(image, label_list):
+#     inputs = app.state.processor(
+#         text=label_list,
+#         images=[image] * len(label_list),
+#         padding="max_length",
+#         return_tensors="pt",
+#     )
+#     outputs = app.state.model(**inputs)
 
-    temp_list = []
-    for i in inds.squeeze():
-        temp_list.append(app.state.colors[i])
-    image = cv2.resize(np.array(image), (preds.shape[-2], preds.shape[-1]))
-    output = (
-        np.array(temp_list)
-        .T.reshape(3, preds.shape[-2], preds.shape[-1])
-        .transpose(1, 2, 0)
-        * 255
-    )
-    blended = cv2.addWeighted(image, 0.5, output, 0.5, 0, dtype=cv2.CV_8UC3)
-    return np.clip(blended, 0, 255)
+#     preds = outputs.logits.unsqueeze(1).cpu()
+#     flat_preds = torch.sigmoid(preds.squeeze()).reshape((preds.shape[0], -1))
+#     flat_preds_with_treshold = torch.full(
+#         (preds.shape[0] + 1, flat_preds.shape[-1]), 0.5
+#     )  # threshold 변경 필요
+#     flat_preds_with_treshold[1 : preds.shape[0] + 1, :] = flat_preds
+#     inds = torch.topk(flat_preds_with_treshold, 1, dim=0).indices
+
+#     temp_list = []
+#     for i in inds.squeeze():
+#         temp_list.append(app.state.colors[i])
+#     image = cv2.resize(np.array(image), (preds.shape[-2], preds.shape[-1]))
+#     output = (
+#         np.array(temp_list)
+#         .T.reshape(3, preds.shape[-2], preds.shape[-1])
+#         .transpose(1, 2, 0)
+#         * 255
+#     )
+#     blended = cv2.addWeighted(image, 0.5, output, 0.5, 0, dtype=cv2.CV_8UC3)
+#     return np.clip(blended, 0, 255)
 
 
 @app.post("/zip_upload/")
@@ -162,7 +182,8 @@ async def segment(path: str = Form(...)):
     # if len(file_list) - 1 < image_num:
     #    image_num = len(file_list) - 1
 
-    img = Image.open(f"{FOLDER_DIR}/{id}/original/{file_name}")
+    img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
+    img = Image.open(img_path)
     output = await segment_everything(img)
     output = output.convert("RGB")
     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/{file_name}"):
@@ -172,8 +193,14 @@ async def segment(path: str = Form(...)):
         f"{FOLDER_DIR}/{id}/segment/{file_name}",
         media_type="image/jpg",
     )
-
-    return seg_img
+    
+    text_seg_output = await segment_text(box_threshold, text_threshold, img_path, text_prompt)
+    text_seg_output.save(f"{FOLDER_DIR}/{id}/segment/{file_name}_dino")
+    seg_dino_img = FileResponse(
+        f"{FOLDER_DIR}/{id}/segment/{file_name}_dino",
+        media_type="image/jpg",
+    )
+    return seg_img, seg_dino_img
 
 
 @app.get("/remove/")
