@@ -31,6 +31,7 @@ def get_arg():
     parser.add_argument("--num_classes", type=int, default= 19)
     parser.add_argument("--backbone", type=str, default='hrnet48')
     parser.add_argument("--pretrained", type=str, default=None)
+    parser.add_argument("--experiment_name",type=str, default='mlflow_ex')
     
     args = parser.parse_args()
     return args
@@ -39,19 +40,25 @@ def get_arg():
 def run(args):
     seed_everything(args.seed)
     
-    # 실험 이름 설정
-    mlflow.set_experiment(experiment_name="mlflow_test")
-    
     # 실험 환경 path 설정
     base_path = os.path.dirname(os.path.abspath(__file__))
     tracking_uri = 'file://'+os.path.join(base_path,'mlruns')
     mlflow.set_tracking_uri(tracking_uri)
+    
+    # clinet 설정
+    client = MlflowClient(tracking_uri=tracking_uri)
+    
     # 실험 이름에 따라 실험 뽑기
-    experiment = mlflow.get_experiment_by_name("mlflow_test")
+    experiment = mlflow.get_experiment_by_name(args.experiment_name)
+    # 없다면 생성
+    if experiment is None:
+        experiment_id = mlflow.create_experiment(name=args.experiment_name)
+        experiment = mlflow.get_experiment_by_name(args.experiment_name)
+        print(experiment)
     
     # 이전 실험들을 불러와서 제일 높은 max값 불러오기
-    client = MlflowClient()
     experiment_id = experiment.experiment_id
+    
     runs = client.search_runs(experiment_id)
     if len(runs):
         best_runs = max(runs, key=lambda r: r.data.metrics['best_score'])
