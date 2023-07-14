@@ -122,9 +122,6 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
             coord_value = gr.Textbox()
 
     next_btn_e.click(next_img, outputs=present_img)
-    # next_btn_e.click(next, inputs=[id], outputs=[segm_img_e])
-    # segment_btn_e.click(seg, inputs=[id], outputs=[segm_img_e])
-
     request_btn_e.click(remove, inputs=[id])
 
     segm_img_e.select(get_points, inputs=[segm_img_e], outputs=[coord_value])
