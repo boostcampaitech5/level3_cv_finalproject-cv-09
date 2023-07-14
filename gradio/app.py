@@ -39,8 +39,8 @@ def viz_img(id, path):
 
 def segment(id, img_path):
     data = {"path": os.path.join(str(id), str(img_path))}
-    res = requests.post("http://115.85.182.123:30008/segment/", data=data)
-    return Image.open(io.BytesIO(res.content))
+    seg = requests.post("http://115.85.182.123:30008/segment/", data=data)
+    return Image.open(io.BytesIO(seg.content))
 
 
 def remove(id):
