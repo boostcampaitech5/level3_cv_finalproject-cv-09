@@ -38,7 +38,7 @@ README를 읽기 전에, 터미널에 다음 명령어를 입력하여 필요한
     프론트엔드에서 사용자가 트리거를 보내면 Segment Everything을 이용하여 원본 이미로부터 객체를 Segment하고, 결과를 저장한 후 반환합니다. 사용자가 zip_upload에서 입력한 ID값을 이용하여 저장 경로를 차별화합니다.
 
 ##### 수정 예정
-    - Next와 Segment API를 분리합니다.
+    - 미정
 ---
 ### 3. json_download
     

@@ -31,9 +31,6 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 @app.on_event("startup")
 async def startup_event():
-    app.ID = str("")
-    app.TASK = str("")
-    app.IMAGE_NUM = defaultdict(int)
 
     app.state.colors = [
         (0, 0, 0),
@@ -159,9 +156,6 @@ async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
             os.makedirs(path, exist_ok=True)
 
     file_name = (files.filename).split(".")[0]
-    app.ID = id
-    app.TASK = file_name
-    app.IMAGE_NUM[id] = -1
     content = await files.read()
 
     ZIP_PATH = f"{FOLDER_DIR}/{id}/zip"
@@ -172,9 +166,10 @@ async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
 
 
 # Implement Model
-@app.get("/segment/")
+@app.post("/segment/")
 async def segment(path: str = Form(...)):
     id, file_name = path.split("/")
+<<<<<<< HEAD
     # app.IMAGE_NUM[id] += 1
     # file_name = app.TASK
     # image_num = app.IMAGE_NUM[id]
@@ -184,10 +179,13 @@ async def segment(path: str = Form(...)):
 
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
     img = Image.open(img_path)
+=======
+    img = Image.open(f"{FOLDER_DIR}/{id}/original/{file_name}")
+>>>>>>> d1da9bfff64ec0e3f33ac9c182130ac4ed84840a
     output = await segment_everything(img)
     output = output.convert("RGB")
-    if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/{file_name}"):
-        os.mkdir(f"{FOLDER_DIR}/{id}/segment/{file_name}")
+    if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
+        os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
     output.save(f"{FOLDER_DIR}/{id}/segment/{file_name}")
     seg_img = FileResponse(
         f"{FOLDER_DIR}/{id}/segment/{file_name}",
@@ -203,10 +201,8 @@ async def segment(path: str = Form(...)):
     return seg_img, seg_dino_img
 
 
-@app.get("/remove/")
-def remove():
-    id = app.ID
-    app.IMAGE_NUM[id] = -1
+@app.post("/remove/")
+def remove(id: str = Form(...)):
     if id == "":
         return 0
     path_list = []
@@ -214,7 +210,6 @@ def remove():
     path_list.append(f"{FOLDER_DIR}/{id}/segment")
     path_list.append(f"{FOLDER_DIR}/{id}/zip")
     for path in path_list:
-        print(path)
         if os.path.isdir(path):
             shutil.rmtree(path)
 

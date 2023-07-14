@@ -21,14 +21,31 @@ def zip_upload(file_obj, id):
     return os.listdir(f"data/{id}")
 
 
+def start_annotation(img_list):
+    global img_iter
+    img_iter = iter(img_list)
+    return next(img_iter)
+
+
+def next_img():
+    global img_iter
+    return next(img_iter)
+
+
+def viz_img(id, path):
+    personal_path = f"{id}/{path}"
+    return Image.open(os.path.join("data", personal_path)), segment(id, path)
+
+
 def segment(id, img_path):
     data = {"path": os.path.join(str(id), str(img_path))}
     res = requests.post("http://115.85.182.123:30008/segment/", data=data)
     return Image.open(io.BytesIO(res.content))
 
 
-def remove():
-    res = requests.get("http://115.85.182.123:30008/remove/")
+def remove(id):
+    data = {"id": str(id)}
+    res = requests.post("http://115.85.182.123:30008/remove/", data=data)
     return res.status_code
 
 
@@ -40,18 +57,6 @@ description_e = """This is a demo of [Faster Segment Anything(MobileSAM) Model](
                    Enjoy!
                 
               """
-
-
-examples = [
-    ["images/N-B-P-004_000433.jpg"],
-    ["images/N-B-P-004_017137.jpg"],
-    ["images/N-B-P-021_000109.jpg"],
-    ["images/N-E-C-020_000505.jpg"],
-    ["images/N-E-C-020_002305.jpg"],
-    ["images/S-W-P-004_015841.jpg"],
-]
-
-default_example = examples[0]
 
 css = "h1 { text-align: center } .about { text-align: justify; padding-left: 10%; padding-right: 10%; }"
 
@@ -65,18 +70,12 @@ def get_points(image, evt: gr.SelectData):
 cond_img_e = gr.Image(label="Input", type="pil")
 segm_img_e = gr.Image(label="Mobile SAM Image", interactive=False, type="pil")
 id = gr.Textbox()
+img_list = gr.JSON()
+img_iter = None  # ["img1.jpg", .... ]
+# next(img_iter)
 
 grounding_dino_SAM_img_e = gr.Image(
     label="Clip_Segmentation Image", interactive=False, image_mode="RGBA"
-)
-
-input_size_slider = gr.components.Slider(
-    minimum=512,
-    maximum=1024,
-    value=1024,
-    step=64,
-    label="Input_size",
-    info="Our model was trained on a size of 1024",
 )
 
 with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
@@ -84,13 +83,18 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
         with gr.Column(scale=1):
             gr.Markdown(title)
     with gr.Tab("file upload Tab"):
-        gr.Interface(zip_upload, inputs=["file", id], outputs="text")
+        gr.Interface(
+            zip_upload, inputs=["file", id], outputs=img_list, allow_flagging="never"
+        )
         label_list = gr.Textbox(interactive=True)
+        with gr.Row():
+            set_label_btn_e = gr.Button("Set Entire label", size="sm")
+            start_btn_e = gr.Button("Start Annotation", size="sm")
     with gr.Tab("Annotation Tab"):
+        present_img = gr.Textbox(interactive=False)
         cond_img_e.render()
         with gr.Row(variant="panel"):
             with gr.Column(scale=1):
-                input_size_slider.render()
                 segment_btn_e = gr.Button("Segment Everything", variant="primary")
             with gr.Column(scale=1):
                 label_checkbox = gr.CheckboxGroup(
@@ -116,33 +120,30 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
                 request_btn_e = gr.Button("request", variant="secondary")
         with gr.Row():
             coord_value = gr.Textbox()
-    # segment_btn_e.click(
-    #     segment_everything,
-    #     inputs=[
-    #         cond_img_e,
-    #         input_size_slider,
-    #     ],
-    #     outputs=[segm_img_e],
-    # )
 
-    segment_btn_e.click(segment, inputs=[id, cond_img_e], outputs=[segm_img_e])
+    next_btn_e.click(next_img, outputs=present_img)
+    # next_btn_e.click(next, inputs=[id], outputs=[segm_img_e])
+    # segment_btn_e.click(seg, inputs=[id], outputs=[segm_img_e])
 
-    # next_btn_e.click(
-
-    # )
-
-    request_btn_e.click(remove)
+    request_btn_e.click(remove, inputs=[id])
 
     segm_img_e.select(get_points, inputs=[segm_img_e], outputs=[coord_value])
-    # clipseg_btn_e.click(
-    #     clip_segmentation, inputs=[cond_img_e, label_checkbox], outputs=[clipseg_img_e]
-    # )
-    label_list.change(
+
+    set_label_btn_e.click(
         fn=lambda value: label_checkbox.update(
             choices=value.replace(", ", ",").split(",")
         ),
         inputs=label_list,
         outputs=label_checkbox,
     )
+    start_btn_e.click(
+        fn=start_annotation,
+        inputs=img_list,
+        outputs=present_img,
+    )
+    present_img.change(
+        fn=viz_img, inputs=[id, present_img], outputs=[cond_img_e, segm_img_e]
+    )
+
 demo.queue()
 demo.launch()
