@@ -14,7 +14,7 @@ def zip_upload(file_obj, id):
     with open(file_obj.name, "rb") as f:
         files = {"files": f}
         res = requests.post(
-            "http://127.0.0.1:30008/zip_upload/",
+            "http://115.85.182.123:30008/zip_upload/",
             data=data,
             files=files,
         )
@@ -39,13 +39,13 @@ def viz_img(id, path):
 
 def segment(id, img_path):
     data = {"path": os.path.join(str(id), str(img_path))}
-    seg = requests.post("http://127.0.0.1:30008/segment/", data=data)
+    seg = requests.post("http://115.85.182.123:30008/segment/", data=data)
     return Image.open(io.BytesIO(seg.content))
 
 
 def remove(id):
     data = {"id": str(id)}
-    res = requests.post("http://127.0.0.1:30008/remove/", data=data)
+    res = requests.post("http://115.85.182.123:30008/remove/", data=data)
     return res.status_code
 
 
