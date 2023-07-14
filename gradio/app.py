@@ -6,7 +6,6 @@ from PIL import Image
 from zipfile import ZipFile
 import requests
 
-
 def zip_upload(file_obj, id):
     with ZipFile(file_obj.name, "r") as f:
         f.extractall(f"data/{id}")
@@ -20,15 +19,30 @@ def zip_upload(file_obj, id):
         )
     return os.listdir(f"data/{id}")
 
+def seg(id):
+    global i
+    i = 0
+    return segment(id, i)
 
-def segment(id, img_path):
+def next(id):
+    global i
+    i += 1
+    return segment(id, i)
+
+def segment(id, index):
+    file_list = os.listdir(f"data/{id}")
+    if index > len(file_list) - 1:
+        index = len(file_list) - 1
+    img_path = file_list[index]
     data = {"path": os.path.join(str(id), str(img_path))}
     res = requests.post("http://115.85.182.123:30008/segment/", data=data)
     return Image.open(io.BytesIO(res.content))
 
 
-def remove():
-    res = requests.get("http://115.85.182.123:30008/remove/")
+def remove(id):
+    data = {"id": str(id)}
+    res = requests.post("http://115.85.182.123:30008/remove/",
+                        data=data)
     return res.status_code
 
 
@@ -54,7 +68,6 @@ examples = [
 default_example = examples[0]
 
 css = "h1 { text-align: center } .about { text-align: justify; padding-left: 10%; padding-right: 10%; }"
-
 
 def get_points(image, evt: gr.SelectData):
     x, y = evt.index[0], evt.index[1]
@@ -116,22 +129,12 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
                 request_btn_e = gr.Button("request", variant="secondary")
         with gr.Row():
             coord_value = gr.Textbox()
-    # segment_btn_e.click(
-    #     segment_everything,
-    #     inputs=[
-    #         cond_img_e,
-    #         input_size_slider,
-    #     ],
-    #     outputs=[segm_img_e],
-    # )
 
-    segment_btn_e.click(segment, inputs=[id, cond_img_e], outputs=[segm_img_e])
+    segment_btn_e.click(seg, inputs=[id], outputs=[segm_img_e])
 
-    # next_btn_e.click(
-
-    # )
-
-    request_btn_e.click(remove)
+    next_btn_e.click(next, inputs=[id], outputs=[segm_img_e])
+    
+    request_btn_e.click(remove, inputs=[id])
 
     segm_img_e.select(get_points, inputs=[segm_img_e], outputs=[coord_value])
     # clipseg_btn_e.click(
