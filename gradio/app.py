@@ -7,14 +7,21 @@ from zipfile import ZipFile
 import requests
 
 
-def zip_upload(file_obj, id):
-    with ZipFile(file_obj.name, "r") as f:
+def zip_upload(img_zip, id):
+    with ZipFile(img_zip.name, "r") as f:
         f.extractall(f"data/{id}")
     data = {"id": str(id)}
-    with open(file_obj.name, "rb") as f:
+    with open(img_zip.name, "rb") as f:
         files = {"files": f}
         res = requests.post(
             "http://115.85.182.123:30008/zip_upload/",
+            data=data,
+            files=files,
+        )
+    with open(img_zip.name, "rb") as f:
+        files = {"files": f}
+        res = requests.post(
+            "http://118.67.142.203:30008/zip_upload/",
             data=data,
             files=files,
         )
@@ -34,7 +41,7 @@ def next_img():
 
 def viz_img(id, path):
     personal_path = f"{id}/{path}"
-    return Image.open(os.path.join("data", personal_path)), segment(id, path)
+    return Image.open(os.path.join("data", personal_path))
 
 
 def segment(id, img_path):
@@ -43,20 +50,24 @@ def segment(id, img_path):
     return Image.open(io.BytesIO(seg.content))
 
 
-def remove(id):
-    data = {"id": str(id)}
-    res = requests.post("http://115.85.182.123:30008/remove/", data=data)
-    return res.status_code
+def segment_text(id, img_path, text_prompt):
+    data = {"path": os.path.join(str(id), str(img_path)), "text_prompt": text_prompt}
+    seg = requests.post("http://118.67.142.203:30008/segment_text/", data=data)
+    return Image.open(io.BytesIO(seg.content))
+
+
+def segment_reqest(id, img_path, text_prompt):
+    return segment(id, img_path), segment_text(id, img_path, text_prompt)
+
+
+# def remove(id):
+#     data = {"id": str(id)}
+#     res = requests.post("http://115.85.182.123:30008/remove/", data=data)
+#     return res.status_code
 
 
 # Description
-title = "<center><strong><font size='8'>Faster Segment Anything(MobileSAM)<font></strong></center>"
-
-description_e = """This is a demo of [Faster Segment Anything(MobileSAM) Model](https://github.com/ChaoningZhang/MobileSAM).
-                   We will provide box mode soon. 
-                   Enjoy!
-                
-              """
+title = "<center><strong><font size='8'>Image Annotation Tool<font></strong></center>"
 
 css = "h1 { text-align: center } .about { text-align: justify; padding-left: 10%; padding-right: 10%; }"
 
@@ -75,10 +86,12 @@ img_iter = None  # ["img1.jpg", .... ]
 # next(img_iter)
 
 grounding_dino_SAM_img_e = gr.Image(
-    label="Clip_Segmentation Image", interactive=False, image_mode="RGBA"
+    label="grounding_dino_SAM_img", interactive=False, type="pil"
 )
-
-with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
+my_theme = gr.Theme.from_hub("nuttea/Softblue")
+with gr.Blocks(
+    css=css, title="Faster Segment Anything(MobileSAM)", theme=my_theme
+) as demo:
     with gr.Row():
         with gr.Column(scale=1):
             gr.Markdown(title)
@@ -86,28 +99,31 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
         gr.Interface(
             zip_upload, inputs=["file", id], outputs=img_list, allow_flagging="never"
         )
-        label_list = gr.Textbox(interactive=True)
+        label_list = gr.Textbox(
+            label="Input entire label list that separated ,",
+            info="ex: human, tree, car, sky",
+            interactive=True,
+        )
         with gr.Row():
             set_label_btn_e = gr.Button("Set Entire label", size="sm")
             start_btn_e = gr.Button("Start Annotation", size="sm")
     with gr.Tab("Annotation Tab"):
-        present_img = gr.Textbox(interactive=False)
-        cond_img_e.render()
-        with gr.Row(variant="panel"):
-            with gr.Column(scale=1):
-                segment_btn_e = gr.Button("Segment Everything", variant="primary")
-            with gr.Column(scale=1):
-                label_checkbox = gr.CheckboxGroup(
-                    choices=[],
-                    label="select label in present image",
-                    interactive=True,
-                )
-                clipseg_btn_e = gr.Button("clip_segmentation", variant="primary")
         with gr.Row():
-            with gr.Tab("Grounding Dino"):
-                grounding_dino_SAM_img_e.render()
-            with gr.Tab("Segment Everything"):
-                segm_img_e.render()
+            present_img = gr.Textbox(label="present Image name", interactive=False)
+        with gr.Row():
+            with gr.Column():
+                cond_img_e.render()
+            with gr.Column():
+                with gr.Tab("Grounding Dino"):
+                    grounding_dino_SAM_img_e.render()
+                with gr.Tab("Segment Everything"):
+                    segm_img_e.render()
+        with gr.Row(variant="panel"):
+            label_checkbox = gr.CheckboxGroup(
+                choices=[],
+                label="select label in present image",
+                interactive=True,
+            )
 
         with gr.Row():
             with gr.Column():
@@ -117,18 +133,11 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
             with gr.Column():
                 next_btn_e = gr.Button("next", variant="secondary")
             with gr.Column():
-                request_btn_e = gr.Button("request", variant="secondary")
+                request_btn_e = gr.Button("request", variant="primary")
         with gr.Row():
-            coord_value = gr.Textbox()
+            coord_value = gr.Textbox(label="Preview annotation.json")
 
-    next_btn_e.click(next_img, outputs=present_img)
-    # next_btn_e.click(next, inputs=[id], outputs=[segm_img_e])
-    # segment_btn_e.click(seg, inputs=[id], outputs=[segm_img_e])
-
-    request_btn_e.click(remove, inputs=[id])
-
-    segm_img_e.select(get_points, inputs=[segm_img_e], outputs=[coord_value])
-
+    ################ 1 page buttons ################
     set_label_btn_e.click(
         fn=lambda value: label_checkbox.update(
             choices=value.replace(", ", ",").split(",")
@@ -141,9 +150,23 @@ with gr.Blocks(css=css, title="Faster Segment Anything(MobileSAM)") as demo:
         inputs=img_list,
         outputs=present_img,
     )
-    present_img.change(
-        fn=viz_img, inputs=[id, present_img], outputs=[cond_img_e, segm_img_e]
-    )
+    ################################################
 
+    ################ 2 page buttons ################
+    next_btn_e.click(next_img, outputs=present_img)
+    request_btn_e.click(
+        segment_reqest,
+        inputs=[id, present_img, label_checkbox],
+        outputs=[segm_img_e, grounding_dino_SAM_img_e],
+    )
+    ################################################
+
+    segm_img_e.select(get_points, inputs=[segm_img_e], outputs=[coord_value])
+
+    present_img.change(
+        fn=viz_img,
+        inputs=[id, present_img],
+        outputs=[cond_img_e],
+    )
 demo.queue()
 demo.launch()
