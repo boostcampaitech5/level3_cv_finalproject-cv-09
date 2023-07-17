@@ -102,7 +102,7 @@ async def segment_everything(
     return fig
 
 @torch.no_grad()
-async def segment_text(box_threshold = 0.3, text_threshold = 0.3, image_path = "", text_prompt = "sky"):
+async def segment_dino(box_threshold = 0.3, text_threshold = 0.3, image_path = "", text_prompt = "sky"):
     image_pil = load_image(image_path)
     masks, boxes, phrases, logits = app.state.lang_sam.predict(image_pil, text_prompt, box_threshold, text_threshold)
     labels = [f"{phrase} {logit:.2f}" for phrase, logit in zip(phrases, logits)]
@@ -110,6 +110,7 @@ async def segment_text(box_threshold = 0.3, text_threshold = 0.3, image_path = "
     image_array = np.asarray(image_pil)
     image = draw_image(image_array, masks, boxes, labels)
     image = Image.fromarray(np.uint8(image)).convert("RGB")
+    print(image)
     return image
 
 # @torch.no_grad()
@@ -187,7 +188,7 @@ async def segment_text(path: str = Form(...)):
     box_threshold, text_threshold = 0.3, 0.3
     id, file_name = path.split("/")
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
-    text_seg_output = await segment_text(box_threshold, text_threshold, img_path, text_prompt = ['dog . trash'])
+    text_seg_output = await segment_dino(box_threshold, text_threshold, img_path, text_prompt = 'dog . trash')
     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
         os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
     text_seg_output.save(f"{FOLDER_DIR}/{id}/segment/dino_{file_name}")
