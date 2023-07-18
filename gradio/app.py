@@ -7,6 +7,13 @@ from zipfile import ZipFile
 import requests
 
 
+def alert_eof():
+    message = f"마지막 이미지입니다."
+    # JavaScript를 사용하여 alert 창을 생성하고 메시지를 출력
+    alert_script = f"alert('{message}');"
+    display(HTML(f"<script>{alert_script}</script>"))
+
+
 def zip_upload(img_zip, id):
     with ZipFile(img_zip.name, "r") as f:
         f.extractall(f"data/{id}")
@@ -36,7 +43,11 @@ def start_annotation(img_list):
 
 def next_img():
     global img_iter
-    return next(img_iter)
+    try:
+        next_img = next(img_iter)
+    except StopIteration:
+        gr.Interface(fn=alert_eof, outputs=None).launch()
+    return next_img
 
 
 def viz_img(id, path):
@@ -51,7 +62,9 @@ def segment(id, img_path):
 
 
 def segment_text(id, img_path, text_prompt):
-    data = {"path": os.path.join(str(id), str(img_path)), "text_prompt": text_prompt}
+    string_prompt = ' . '.join(text_prompt)
+    data = {"path": os.path.join(str(id), str(img_path)), "text_prompt": string_prompt}
+    print(data)
     seg = requests.post("http://118.67.142.203:30008/segment_text/", data=data)
     return Image.open(io.BytesIO(seg.content))
 

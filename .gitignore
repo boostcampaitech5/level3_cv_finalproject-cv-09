@@ -15,4 +15,5 @@ logs
 *.zip
 data/
 mlruns/
+FastAPI/data
 
