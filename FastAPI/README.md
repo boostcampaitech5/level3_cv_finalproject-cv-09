@@ -21,8 +21,9 @@ README를 읽기 전에, 터미널에 다음 명령어를 입력하여 필요한
 
 # APIs
 
-    현재 3개의 API를 제공하고 있습니다.
-    zip_upload, segment, remove API 모두 정상적으로 동작합니다.
+    현재 5개의 API를 제공하고 있습니다.
+    zip_upload, segment, segment_text, remove API 모두 정상적으로 동작합니다.
+    json_download API는 테스트가 필요합니다.
 
 ### 1. zip_upload
 
@@ -40,7 +41,13 @@ README를 읽기 전에, 터미널에 다음 명령어를 입력하여 필요한
 ##### 수정 예정
     - 미정
 ---
-### 3. json_download
+### 3. segment_text
+
+    Segment 기능을 제공하는 API입니다.
+    사용자에게 prompt를 통해 segment label을 직접 지정할 수 있습니다.
+
+---
+### 4. json_download
     
     json 파일 다운로드 기능을 제공하는 API입니다.
     프론트엔드에서 사용자가 트리거를 보내면 json 파일을 보내 다운로드가 가능하도록 합니다.
@@ -49,7 +56,7 @@ README를 읽기 전에, 터미널에 다음 명령어를 입력하여 필요한
     - Mask를 RLE로 바꾸는 기능이 구현되면 return 값을 수정할 예정입니다. 현재는 test_json 파일을 return 합니다.
 
 ---
-### 4. remove
+### 5. remove
 
     jpg 파일 삭제 기능을 제공하는 API입니다.
     프론트엔드에서 사용자가 트리거를 보내면 사용자가 업로드한 파일들을 삭제합니다.
