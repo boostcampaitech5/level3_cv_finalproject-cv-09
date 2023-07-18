@@ -79,15 +79,13 @@ def get_points(image, evt: gr.SelectData):
 
 
 cond_img_e = gr.Image(label="Input", type="pil")
-segm_img_e = gr.Image(label="Mobile SAM Image", interactive=False, type="pil")
+segm_img_e = gr.Image(label="Mobile SAM", interactive=False, type="pil")
+gdSAM_img_e = gr.Image(label="GDSAM", interactive=False, type="pil")
+
 id = gr.Textbox()
 img_list = gr.JSON()
 img_iter = None  # ["img1.jpg", .... ]
-# next(img_iter)
 
-grounding_dino_SAM_img_e = gr.Image(
-    label="grounding_dino_SAM_img", interactive=False, type="pil"
-)
 my_theme = gr.Theme.from_hub("nuttea/Softblue")
 with gr.Blocks(
     css=css, title="Faster Segment Anything(MobileSAM)", theme=my_theme
@@ -112,10 +110,11 @@ with gr.Blocks(
             present_img = gr.Textbox(label="present Image name", interactive=False)
         with gr.Row():
             with gr.Column():
-                cond_img_e.render()
+                with gr.Tab("Original Image"):
+                    cond_img_e.render()
             with gr.Column():
                 with gr.Tab("Grounding Dino"):
-                    grounding_dino_SAM_img_e.render()
+                    gdSAM_img_e.render()
                 with gr.Tab("Segment Everything"):
                     segm_img_e.render()
         with gr.Row(variant="panel"):
@@ -157,7 +156,7 @@ with gr.Blocks(
     request_btn_e.click(
         segment_reqest,
         inputs=[id, present_img, label_checkbox],
-        outputs=[segm_img_e, grounding_dino_SAM_img_e],
+        outputs=[segm_img_e, gdSAM_img_e],
     )
     ################################################
 

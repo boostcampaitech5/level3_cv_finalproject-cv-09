@@ -31,7 +31,6 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 @app.on_event("startup")
 async def startup_event():
-
     app.state.colors = [
         (0, 0, 0),
         (0.8196078431372549, 0.2901960784313726, 0.25882352941176473),
@@ -62,11 +61,10 @@ async def startup_event():
     # app.state.model = CLIPSegForImageSegmentation.from_pretrained(
     #     "CIDAS/clipseg-rd64-refined"
     # )
-    
+
     # Lang-SAM load
-    app.state.lang_sam = LangSAM(sam_type="vit_h", device = device)
+    app.state.lang_sam = LangSAM(sam_type="vit_h", device=device)
     app.state.lang_sam
-    
 
 
 @torch.no_grad()
@@ -101,16 +99,22 @@ async def segment_everything(
     )
     return fig
 
+
 @torch.no_grad()
-async def segment_text(box_threshold = 0.3, text_threshold = 0.3, image_path = "", text_prompt = "sky"):
+async def segment_text(
+    box_threshold=0.3, text_threshold=0.3, image_path="", text_prompt="sky"
+):
     image_pil = load_image(image_path)
-    masks, boxes, phrases, logits = app.state.lang_sam.predict(image_pil, text_prompt, box_threshold, text_threshold)
+    masks, boxes, phrases, logits = app.state.lang_sam.predict(
+        image_pil, text_prompt, box_threshold, text_threshold
+    )
     labels = [f"{phrase} {logit:.2f}" for phrase, logit in zip(phrases, logits)]
     print("masks : ", len(masks))
     image_array = np.asarray(image_pil)
     image = draw_image(image_array, masks, boxes, labels)
     image = Image.fromarray(np.uint8(image)).convert("RGB")
     return image
+
 
 # @torch.no_grad()
 # def clip_segmentation(image, label_list):
@@ -180,14 +184,24 @@ async def segment(path: str = Form(...)):
         f"{FOLDER_DIR}/{id}/segment/{file_name}",
         media_type="image/jpg",
     )
+    if file_name.endswith(".png"):
+        seg_img = FileResponse(
+            f"{FOLDER_DIR}/{id}/segment/{file_name}",
+            media_type="image/png",
+        )
     return seg_img
 
+
 @app.post("/segment_text/")
-async def segment_text(path: str = Form(...)):
+async def segment_text(path: str = Form(...), text_prompt: str = Form(...)):
     box_threshold, text_threshold = 0.3, 0.3
+
+    text_prompt = text_prompt.replace(",", ".")
     id, file_name = path.split("/")
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
-    text_seg_output = await segment_text(box_threshold, text_threshold, img_path, text_prompt = ['dog . trash'])
+    text_seg_output = await segment_text(
+        box_threshold, text_threshold, img_path, text_prompt=["dog . trash"]
+    )
     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
         os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
     text_seg_output.save(f"{FOLDER_DIR}/{id}/segment/dino_{file_name}")
@@ -196,7 +210,6 @@ async def segment_text(path: str = Form(...)):
         media_type="image/jpg",
     )
     return seg_dino_img
-    
 
 
 @app.post("/remove/")
