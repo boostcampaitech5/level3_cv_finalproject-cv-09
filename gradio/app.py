@@ -11,13 +11,13 @@ def zip_upload(img_zip, id):
     with ZipFile(img_zip.name, "r") as f:
         f.extractall(f"data/{id}")
     data = {"id": str(id)}
-    with open(img_zip.name, "rb") as f:
-        files = {"files": f}
-        res = requests.post(
-            "http://115.85.182.123:30008/zip_upload/",
-            data=data,
-            files=files,
-        )
+    # with open(img_zip.name, "rb") as f:
+    #     files = {"files": f}
+    #     res = requests.post(
+    #         "http://115.85.182.123:30008/zip_upload/",
+    #         data=data,
+    #         files=files,
+    #     )
     with open(img_zip.name, "rb") as f:
         files = {"files": f}
         res = requests.post(
@@ -51,12 +51,13 @@ def viz_img(id, path):
 
 def segment(id, img_path):
     data = {"path": os.path.join(str(id), str(img_path))}
-    seg = requests.post("http://115.85.182.123:30008/segment/", data=data)
+    seg = requests.post("http://118.67.142.203:30008/segment/", data=data)
     return Image.open(io.BytesIO(seg.content))
 
 
 def segment_text(id, img_path, text_prompt):
-    data = {"path": os.path.join(str(id), str(img_path)), "text_prompt": text_prompt}
+    string_prompt = ' . '.join(text_prompt)
+    data = {"path": os.path.join(str(id), str(img_path)), "text_prompt": string_prompt}
     seg = requests.post("http://118.67.142.203:30008/segment_text/", data=data)
     return Image.open(io.BytesIO(seg.content))
 

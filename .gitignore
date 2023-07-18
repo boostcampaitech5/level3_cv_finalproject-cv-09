@@ -3,11 +3,13 @@ practice
 __pycache__
 images_win
 images_mac
-clipseg/third_party/PhraseCutDataset/data/
+clipseg/*
+MobileSAM/*
 .vscode
 */nohup.out
 *.ipynb
 lang-segment-anything/Grounded-Segment-Anything
+gradio/images
 logs
 .empty
 *.jpg
@@ -15,4 +17,5 @@ logs
 *.zip
 data/
 mlruns/
+FastAPI/data
 
