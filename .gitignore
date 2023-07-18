@@ -3,7 +3,8 @@ practice
 __pycache__
 images_win
 images_mac
-clipseg/
+clipseg/*
+MobileSAM/*
 .vscode
 */nohup.out
 *.ipynb
