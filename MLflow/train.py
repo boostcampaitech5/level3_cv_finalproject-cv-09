@@ -2,100 +2,39 @@ import mlflow
 import mlflow.pytorch
 from mlflow.tracking import MlflowClient
 import torch
-import torch.nn as nn
-import torchvision
 from torchvision import datasets, transforms
 import argparse
-import pytorch_lightning as pl
-import torchmetrics
 from datetime import datetime
 from pytorch_lightning.loggers.mlflow import MLFlowLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 from utils import seed_everything
 import os
 import pytz
+import numpy as np
+from PIL import Image
+from collections import namedtuple
+from dataset import CustomCityscapesSegmentation
+from models.light import PLModel
+import pytorch_lightning as pl
+
 
 def get_arg():
     parser = argparse.ArgumentParser(description="mlflow-pytorch test")
-    parser.add_argument("--batch",type=int, default=16)
+    parser.add_argument("--batch",type=int, default=2)
     parser.add_argument("--lr",type=float, default=1e-3)
     parser.add_argument("--epochs",type=int,default=2)
     parser.add_argument("--accelerator", choices=['cpu','gpu','auto'],default='gpu')
     parser.add_argument("--precision", choices=['32','16'],default='16')
     parser.add_argument("--seed", type=int , default=42)
     parser.add_argument("--regist_name", type=str, default="register_model")
+    parser.add_argument("--bn_type", type=str, default= 'torchbn')
+    parser.add_argument("--num_classes", type=int, default= 19)
+    parser.add_argument("--backbone", type=str, default='hrnet48')
+    parser.add_argument("--pretrained", type=str, default=None)
+    parser.add_argument("--experiment_name",type=str, default='mlflow_ex')
     
     args = parser.parse_args()
     return args
-
-
-class PLModel(pl.LightningModule):
-    def __init__(self,args):
-        super().__init__()
-        self.net = torchvision.models.mobilenet_v2(num_classes = 10)
-        self.args = args
-        self.train_acc = torchmetrics.Accuracy(task='multiclass', num_classes=10)
-        self.val_acc = torchmetrics.Accuracy(task='multiclass', num_classes=10)
-        self.best_score = 0
-        
-        self.training_step_outputs = []
-        self.validation_step_outputs = []
-        
-    def forward(self,x):
-        return self.net(x)
-
-    # on_epoch는 epoch 마다 on_step은 step 마다
-    def training_step(self, batch, batch_idx):
-        x, y = batch
-        logits = self.forward(x)
-        loss = nn.functional.cross_entropy(logits,y)
-        pred = logits.argmax(dim=1)
-        
-        self.train_acc(pred,y)
-        self.training_step_outputs.append(loss)
-        # self.log("train_loss",loss,on_epoch=True,on_step=False)
-        # self.log("train_acc",self.train_acc,on_epoch=True,on_step=False)
-        return loss
-    
-    def on_train_epoch_end(self) -> None:
-        all_outs = torch.stack(self.training_step_outputs)
-        acc = self.train_acc.compute()
-        
-        self.log("train_loss",all_outs.mean().item())
-        self.log("train_acc",acc.detach().cpu())
-        self.training_step_outputs.clear()
-        self.train_acc.reset()
-        
-    
-    def validation_step(self,batch, batch_idx):
-        x, y = batch
-        logits = self.forward(x)
-        loss = nn.functional.cross_entropy(logits,y)
-        pred = logits.argmax(dim=1)
-        
-        self.val_acc(pred,y)
-        self.validation_step_outputs.append(loss)
-        # self.log("val_loss",loss,on_epoch=True,on_step=False)
-        # self.log("val_acc",self.val_acc,on_epoch=True,on_step=False)
-        
-        return loss
-    
-        
-    def on_validation_epoch_end(self) -> None:
-        all_outs = torch.stack(self.validation_step_outputs)
-        acc = self.val_acc.compute()
-        self.best_score = max(self.best_score,acc)
-        
-        self.log("val_loss",all_outs.mean().item())
-        self.log("val_acc",acc.detach().cpu())
-        self.log("best_score",self.best_score)
-        
-        self.validation_step_outputs.clear()
-        self.val_acc.reset()
-        
-
-    def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(),lr=self.args.lr)
 
 
 def run(args):
@@ -106,14 +45,20 @@ def run(args):
     tracking_uri = 'file://'+os.path.join(base_path,'mlruns')
     mlflow.set_tracking_uri(tracking_uri)
     
-    # 실험 이름 설정
-    mlflow.set_experiment(experiment_name="mlflow_test")
+    # clinet 설정
+    client = MlflowClient(tracking_uri=tracking_uri)
+    
     # 실험 이름에 따라 실험 뽑기
-    experiment = mlflow.get_experiment_by_name("mlflow_test")
+    experiment = mlflow.get_experiment_by_name(args.experiment_name)
+    # 없다면 생성
+    if experiment is None:
+        experiment_id = mlflow.create_experiment(name=args.experiment_name)
+        experiment = mlflow.get_experiment_by_name(args.experiment_name)
+        print(experiment)
     
     # 이전 실험들을 불러와서 제일 높은 max값 불러오기
-    client = MlflowClient()
     experiment_id = experiment.experiment_id
+    
     runs = client.search_runs(experiment_id)
     if len(runs):
         best_runs = max(runs, key=lambda r: r.data.metrics['best_score'])
@@ -124,20 +69,25 @@ def run(args):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     batch_size = args.batch
     
-    train_data = datasets.CIFAR10(root = os.path.join(base_path,'data'),
-                            train = True,
-                            download= True,
-                            transform = transforms.ToTensor())
-    test_data = datasets.CIFAR10(root = os.path.join(base_path,'data'),
-                            train = False,
-                            transform = transforms.ToTensor())
+    train_data = CustomCityscapesSegmentation(
+        data_dir = os.path.join(base_path,'data','cityscape'),
+        image_set="val",
+        transform = transforms.ToTensor(),
+        target_transform = transforms.PILToTensor(),
+        )
+    test_data = CustomCityscapesSegmentation(
+        data_dir = os.path.join(base_path,'data','cityscape'),
+        image_set="test",
+        transform = transforms.ToTensor(),
+        target_transform = transforms.PILToTensor(),
+        )
     
     train_loader = torch.utils.data.DataLoader(dataset = train_data,
                                                batch_size = batch_size, shuffle = True,
-                                               num_workers=8)
+                                               )
     test_loader = torch.utils.data.DataLoader(dataset = test_data,
                                                 batch_size = batch_size, shuffle = False,
-                                                num_workers=8)
+                                               )
     
     # lighiting model 선언
     model = PLModel(args=args)
@@ -151,7 +101,7 @@ def run(args):
         # checkpoint callback 선언
         checkpoint_callback = ModelCheckpoint(
             dirpath = artifact_path, 
-            save_top_k=1, monitor="val_acc", mode="max",
+            save_top_k=1, monitor="val_score", mode="max",
         )
         # logger
         mlf_logger = MLFlowLogger(
@@ -219,6 +169,7 @@ def run(args):
                     )
                 print(f"pre-version {pre_version} is changing 'Staging'")
             
+
 
 if __name__=='__main__':
     args = get_arg()

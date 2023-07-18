@@ -6,13 +6,10 @@ import zipfile
 import shutil
 import cv2
 import json
-from collections import defaultdict
-from pytz import timezone
 from transformers import CLIPSegProcessor, CLIPSegForImageSegmentation
 from utils.tools_gradio import fast_process
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
 from PIL import Image
 from torchvision import transforms
 from mobile_sam import SamAutomaticMaskGenerator, SamPredictor, sam_model_registry
@@ -101,8 +98,8 @@ async def segment_everything(
 
 
 @torch.no_grad()
-async def segment_text(
-    box_threshold=0.3, text_threshold=0.3, image_path="", text_prompt="sky"
+async def segment_dino(
+    box_threshold=0.7, text_threshold=0.7, image_path="", text_prompt="sky"
 ):
     image_pil = load_image(image_path)
     masks, boxes, phrases, logits = app.state.lang_sam.predict(
@@ -113,6 +110,7 @@ async def segment_text(
     image_array = np.asarray(image_pil)
     image = draw_image(image_array, masks, boxes, labels)
     image = Image.fromarray(np.uint8(image)).convert("RGB")
+    print(image)
     return image
 
 
@@ -169,7 +167,6 @@ async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
     zipfile.ZipFile(f"{ZIP_PATH}/{file_name}.zip").extractall(f"data/{id}/original")
 
 
-# Implement Model
 @app.post("/segment/")
 async def segment(path: str = Form(...)):
     id, file_name = path.split("/")
@@ -199,8 +196,8 @@ async def segment_text(path: str = Form(...), text_prompt: str = Form(...)):
     text_prompt = text_prompt.replace(",", ".")
     id, file_name = path.split("/")
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
-    text_seg_output = await segment_text(
-        box_threshold, text_threshold, img_path, text_prompt=["dog . trash"]
+    text_seg_output = await segment_dino(
+        box_threshold, text_threshold, img_path, text_prompt=text_prompt
     )
     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
         os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
@@ -210,6 +207,16 @@ async def segment_text(path: str = Form(...), text_prompt: str = Form(...)):
         media_type="image/jpg",
     )
     return seg_dino_img
+
+
+@app.post("/json_download/")
+def json_download(path: str = Form(...)):
+    id, file_name = path.split("/")
+    file_name = file_name.split(".")[0]
+    output = {"test": [1, 2, 3, 4], "test2": [5, 6, 7, 8]}
+    with open(f"{FOLDER_DIR}/{id}/{file_name}_segment.json", "w") as f:
+        json.dump(output, f, indent=2)
+    return output
 
 
 @app.post("/remove/")
@@ -223,46 +230,3 @@ def remove(id: str = Form(...)):
     for path in path_list:
         if os.path.isdir(path):
             shutil.rmtree(path)
-
-
-# @app.post('/predict/')
-# def predict(image_id: str, prompts: str):
-#     model = CLIPDensePredT(version='ViT-B/32', reduce_dim=64).cuda()
-#     model.eval()
-
-#     model.load_state_dict(torch.load('weights/rd64-uni-refined.pth', map_location=torch.device('cpu')), strict=False);
-
-#     FOLDER = FOLDER_DIR + f'{image_id}'
-#     if not os.path.isdir(FOLDER):
-#         os.mkdir(FOLDER)
-#     path = os.path.join(FOLDER, 'image.jpg')
-#     preds = prediction(path, prompts, model).cpu()
-#     output = visualize_segmentation(preds)
-#     file_name = 'predict.jpg'
-#     path = os.path.join(FOLDER, file_name)
-#     plt.figure(figsize=(10, 10))
-#     plt.axis('off')
-#     plt.imshow(output)
-#     plt.savefig(path)
-
-#     return FileResponse(path)
-
-# Download the result
-
-# @app.get('/download/{image_id}')
-# def download(image_id: str):
-#     FOLDER = FOLDER_DIR + f'{image_id}'
-#     file_name = 'predict.jpg'
-#     path = os.path.join(FOLDER, file_name)
-#     return FileResponse(path)
-
-
-# Send Feedback
-
-# @app.post('/log/{image_id}')
-# def log(image_id: str, log: Log):
-#     FOLDER = FOLDER_DIR + f'{image_id}'
-#     file_name = 'log.txt'
-#     path = os.path.join(FOLDER, file_name)
-#     with open(path, 'w') as f:
-#         f.write(log.log)

@@ -5,19 +5,20 @@ import io
 from PIL import Image
 from zipfile import ZipFile
 import requests
+from collections import deque
 
 
 def zip_upload(img_zip, id):
     with ZipFile(img_zip.name, "r") as f:
         f.extractall(f"data/{id}")
     data = {"id": str(id)}
-    with open(img_zip.name, "rb") as f:
-        files = {"files": f}
-        res = requests.post(
-            "http://115.85.182.123:30008/zip_upload/",
-            data=data,
-            files=files,
-        )
+    # with open(img_zip.name, "rb") as f:
+    #     files = {"files": f}
+    #     res = requests.post(
+    #         "http://115.85.182.123:30008/zip_upload/",
+    #         data=data,
+    #         files=files,
+    #     )
     with open(img_zip.name, "rb") as f:
         files = {"files": f}
         res = requests.post(
@@ -29,14 +30,19 @@ def zip_upload(img_zip, id):
 
 
 def start_annotation(img_list):
-    global img_iter
-    img_iter = iter(img_list)
-    return next(img_iter)
+    global img_deque
+    img_deque = deque(img_list)
+    return img_deque[0]
 
 
 def next_img():
-    global img_iter
-    return next(img_iter)
+    img_deque.rotate(-1)
+    return img_deque[0]
+
+
+def prev_img():
+    img_deque.rotate(1)
+    return img_deque[0]
 
 
 def viz_img(id, path):
@@ -46,18 +52,25 @@ def viz_img(id, path):
 
 def segment(id, img_path):
     data = {"path": os.path.join(str(id), str(img_path))}
-    seg = requests.post("http://115.85.182.123:30008/segment/", data=data)
+    seg = requests.post("http://118.67.142.203:30008/segment/", data=data)
     return Image.open(io.BytesIO(seg.content))
 
 
 def segment_text(id, img_path, text_prompt):
-    data = {"path": os.path.join(str(id), str(img_path)), "text_prompt": text_prompt}
+    string_prompt = " . ".join(text_prompt)
+    data = {"path": os.path.join(str(id), str(img_path)), "text_prompt": string_prompt}
     seg = requests.post("http://118.67.142.203:30008/segment_text/", data=data)
     return Image.open(io.BytesIO(seg.content))
 
 
 def segment_reqest(id, img_path, text_prompt):
     return segment(id, img_path), segment_text(id, img_path, text_prompt)
+
+
+def json_download(id, img_path):
+    data = {"path": os.path.join(str(id), str(img_path))}
+    res = requests.post("http://115.85.182.123:30008/json_download/", data=data)
+    return res.content
 
 
 # def remove(id):
@@ -84,7 +97,6 @@ gdSAM_img_e = gr.Image(label="GDSAM", interactive=False, type="pil")
 
 id = gr.Textbox()
 img_list = gr.JSON()
-img_iter = None  # ["img1.jpg", .... ]
 
 my_theme = gr.Theme.from_hub("nuttea/Softblue")
 with gr.Blocks(
@@ -130,6 +142,8 @@ with gr.Blocks(
             with gr.Column():
                 delete_btn_e = gr.Button("delete", variant="secondary")
             with gr.Column():
+                prev_btn_e = gr.Button("prev", variant="secondary")
+            with gr.Column():
                 next_btn_e = gr.Button("next", variant="secondary")
             with gr.Column():
                 request_btn_e = gr.Button("request", variant="primary")
@@ -152,6 +166,7 @@ with gr.Blocks(
     ################################################
 
     ################ 2 page buttons ################
+    prev_btn_e.click(prev_img, outputs=present_img)
     next_btn_e.click(next_img, outputs=present_img)
     request_btn_e.click(
         segment_reqest,
