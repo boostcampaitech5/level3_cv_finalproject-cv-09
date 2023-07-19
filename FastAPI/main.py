@@ -112,6 +112,7 @@ async def segment_dino(box_threshold = 0.7, text_threshold = 0.7, image_path = "
     masks, boxes, phrases, logits = app.state.lang_sam.predict(image_pil, text_prompt, box_threshold, text_threshold)   # channel x height x width
     labels = [f"{phrase} {logit:.2f}" for phrase, logit in zip(phrases, logits)]
     rle_mask = rle_encode(masks)
+    json_rle = json.dumps(rle_mask)
     json_mask = json.dumps(masks.tolist())
     image_array = np.asarray(image_pil)
     image = draw_image(image_array, masks, boxes, labels)

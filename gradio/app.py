@@ -69,6 +69,10 @@ def segment_text(id, img_path, text_prompt):
     image_pil = Image.open(os.path.join(img_prefix, img_path)).convert("RGB")
     data = {"path": os.path.join(str(id), str(img_path)), "text_prompt": string_prompt}
     seg = requests.post("http://118.67.142.203:30008/segment_text/", data=data)
+    # print(type(seg))
+    # print(type(json.loads(seg)))
+    # print(json.loads(seg))
+    # rle_mask = json.loads(seg)
     masks = torch.tensor(json.loads(seg.json()))
     image_array = np.asarray(image_pil)
     image = draw_image(image_array, masks)
