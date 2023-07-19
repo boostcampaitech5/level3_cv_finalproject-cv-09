@@ -69,7 +69,6 @@ class LangSAM():
         self.sam = SamPredictor(sam)
 
     def build_groundingdino(self):
-        print("asdfasdf")
         ckpt_repo_id = "ShilongLiu/GroundingDINO"
         ckpt_filename = "groundingdino_swinb_cogcoor.pth"
         ckpt_config_filename = "GroundingDINO_SwinB.cfg.py"

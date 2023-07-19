@@ -20,7 +20,6 @@ def draw_image(image, masks, boxes, labels, alpha=0.4):
         image = draw_segmentation_masks(image, masks=masks, colors=['cyan'] * len(masks), alpha=alpha)
     return image.numpy().transpose(1, 2, 0)
 
-
 def get_contours(mask):
     if len(mask.shape) > 2:
         mask = np.squeeze(mask, 0)

@@ -7,7 +7,17 @@ from zipfile import ZipFile
 import requests
 from collections import deque
 import shutil
+import torch
+import json
+import sys
+from torchvision.utils import draw_segmentation_masks
+import time
 
+def draw_image(image, masks, alpha=0.4):
+    image = torch.from_numpy(image).permute(2, 0, 1)
+    if len(masks) > 0:
+        image = draw_segmentation_masks(image, masks=masks, colors=['cyan'] * len(masks), alpha=alpha)
+    return image.numpy().transpose(1, 2, 0)
 
 def zip_upload(img_zip, id):
     with ZipFile(img_zip.name, "r") as f:
@@ -53,11 +63,20 @@ def segment(id, img_path):
 
 # 현석이가 만들어 줄 것.
 def segment_text(id, img_path, text_prompt):
-    string_prompt = " . ".join(text_prompt)
+    start_time = time.time_ns() // 1_000_000
+    string_prompt = ' . '.join(text_prompt)
+    img_prefix = f"data/{id}"
+    image_pil = Image.open(os.path.join(img_prefix, img_path)).convert("RGB")
     data = {"path": os.path.join(str(id), str(img_path)), "text_prompt": string_prompt}
     seg = requests.post("http://118.67.142.203:30008/segment_text/", data=data)
-
-    return Image.open(io.BytesIO(seg.content))
+    masks = torch.tensor(json.loads(seg.json()))
+    image_array = np.asarray(image_pil)
+    image = draw_image(image_array, masks)
+    image = Image.fromarray(np.uint8(image)).convert("RGB")
+    end_time = time.time_ns() // 1_000_000
+    with open("no_rle.txt", "a") as f:
+        f.write(f"{(end_time - start_time)}\n")
+    return image
 
 
 def segment_request(id, img_path, text_prompt):
