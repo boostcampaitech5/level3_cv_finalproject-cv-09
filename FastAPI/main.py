@@ -9,7 +9,8 @@ import json
 from transformers import CLIPSegProcessor, CLIPSegForImageSegmentation
 from utils.tools_gradio import fast_process
 from fastapi import FastAPI, UploadFile, File, Form
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.encoders import jsonable_encoder
 from PIL import Image
 from torchvision import transforms
 from mobile_sam import SamAutomaticMaskGenerator, SamPredictor, sam_model_registry
@@ -101,14 +102,15 @@ async def segment_everything(
 @torch.no_grad()
 async def segment_dino(box_threshold = 0.7, text_threshold = 0.7, image_path = "", text_prompt = "sky"):
     image_pil = load_image(image_path)
+    print("image size : ", image_pil.size) # width x height
     masks, boxes, phrases, logits = app.state.lang_sam.predict(image_pil, text_prompt, box_threshold, text_threshold)
     labels = [f"{phrase} {logit:.2f}" for phrase, logit in zip(phrases, logits)]
-    print("masks : ", len(masks))
+    print("masks : ", masks.shape)  # channel x height x width
+    json_mask = json.dumps(masks.tolist())
     image_array = np.asarray(image_pil)
     image = draw_image(image_array, masks, boxes, labels)
     image = Image.fromarray(np.uint8(image)).convert("RGB")
-    print(image)
-    return image
+    return json_mask, image
 
 # @torch.no_grad()
 # def clip_segmentation(image, label_list):
@@ -185,15 +187,17 @@ async def segment_text(path: str = Form(...), text_prompt: str = Form(...)):
     box_threshold, text_threshold = 0.3, 0.3
     id, file_name = path.split("/")
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
-    text_seg_output = await segment_dino(box_threshold, text_threshold, img_path, text_prompt = text_prompt)
+    text_seg_masks, segmented_image = await segment_dino(box_threshold, text_threshold, img_path, text_prompt = text_prompt)
     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
         os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
-    text_seg_output.save(f"{FOLDER_DIR}/{id}/segment/dino_{file_name}")
-    seg_dino_img = FileResponse(
-        f"{FOLDER_DIR}/{id}/segment/dino_{file_name}",
-        media_type="image/jpg",
-    )
-    return seg_dino_img
+    segmented_image.save(f"{FOLDER_DIR}/{id}/segment/dino_{file_name}")
+    # mask_json = jsonable_encoder(text_seg_masks.tolist())
+    # seg_dino_img = FileResponse(
+    #     f"{FOLDER_DIR}/{id}/segment/dino_{file_name}",
+    #     media_type="image/jpg",
+    # )
+    output_reponse = JSONResponse(content=text_seg_masks)
+    return output_reponse
     
 
 @app.post("/json_download/")
