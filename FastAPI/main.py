@@ -30,7 +30,6 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 @app.on_event("startup")
 async def startup_event():
-
     app.state.colors = [
         (0, 0, 0),
         (0.8196078431372549, 0.2901960784313726, 0.25882352941176473),
@@ -106,6 +105,7 @@ async def segment_everything(
     )
     return fig
 
+
 @torch.no_grad()
 async def segment_dino(box_threshold = 0.7, text_threshold = 0.7, image_path = "", text_prompt = "sky"):
     image_pil = load_image(image_path)  # width x height
@@ -157,12 +157,19 @@ async def segment(path: str = Form(...)):
         f"{FOLDER_DIR}/{id}/segment/{file_name}",
         media_type="image/jpg",
     )
+    if file_name.endswith(".png"):
+        seg_img = FileResponse(
+            f"{FOLDER_DIR}/{id}/segment/{file_name}",
+            media_type="image/png",
+        )
     return seg_img
 
 
 @app.post("/segment_text/")
 async def segment_text(path: str = Form(...), text_prompt: str = Form(...)):
     box_threshold, text_threshold = 0.3, 0.3
+
+    text_prompt = text_prompt.replace(",", ".")
     id, file_name = path.split("/")
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
     if file_name.endswith(".png"):
@@ -171,6 +178,9 @@ async def segment_text(path: str = Form(...), text_prompt: str = Form(...)):
         img.save(jpg_path)
         img_path = jpg_path
     text_seg_masks, segmented_image = await segment_dino(box_threshold, text_threshold, img_path, text_prompt = text_prompt)
+    text_seg_output = await segment_dino(
+        box_threshold, text_threshold, img_path, text_prompt=text_prompt
+    )
     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
         os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
     segmented_image.save(f"{FOLDER_DIR}/{id}/segment/dino_{file_name}")
@@ -187,11 +197,8 @@ async def segment_text(path: str = Form(...), text_prompt: str = Form(...)):
 def json_download(path: str = Form(...)):
     id, file_name = path.split("/")
     file_name = file_name.split(".")[0]
-    output = {
-        "test" : [1, 2, 3, 4],
-        "test2" : [5, 6, 7, 8]
-    }
-    with open(f'{FOLDER_DIR}/{id}/{file_name}_segment.json' ,'w') as f:
+    output = {"test": [1, 2, 3, 4], "test2": [5, 6, 7, 8]}
+    with open(f"{FOLDER_DIR}/{id}/{file_name}_segment.json", "w") as f:
         json.dump(output, f, indent=2)
     return output
 
@@ -207,4 +214,3 @@ def remove(id: str = Form(...)):
     for path in path_list:
         if os.path.isdir(path):
             shutil.rmtree(path)
-
