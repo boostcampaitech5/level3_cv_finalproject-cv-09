@@ -1,18 +1,14 @@
 import os
 import torch
-import matplotlib.pyplot as plt
 import numpy as np
-import zipfile
 import shutil
-import cv2
 import json
 from PIL import Image
-from transformers import CLIPSegProcessor, CLIPSegForImageSegmentation
+from zipfile import ZipFile
 from utils.tools_gradio import fast_process
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from PIL import Image
-from torchvision import transforms
 from mobile_sam import SamAutomaticMaskGenerator, SamPredictor, sam_model_registry
 from lang_segment_anything.lang_sam import LangSAM
 from lang_segment_anything.lang_sam import SAM_MODELS
@@ -54,15 +50,9 @@ async def startup_event():
 
     app.state.mask_generator = SamAutomaticMaskGenerator(mobile_sam)
     app.state.predictor = SamPredictor(mobile_sam)
-
-    # clip_seg load code
-    # app.state.processor = CLIPSegProcessor.from_pretrained("CIDAS/clipseg-rd64-refined")
-    # app.state.model = CLIPSegForImageSegmentation.from_pretrained(
-    #     "CIDAS/clipseg-rd64-refined"
-    # )
     
     # Lang-SAM load
-    app.state.lang_sam = LangSAM(sam_type="vit_h", device = device)
+    # app.state.lang_sam = LangSAM(sam_type="vit_h", device = device)
     
 
 
@@ -110,37 +100,6 @@ async def segment_dino(box_threshold = 0.7, text_threshold = 0.7, image_path = "
     print(image)
     return image
 
-# @torch.no_grad()
-# def clip_segmentation(image, label_list):
-#     inputs = app.state.processor(
-#         text=label_list,
-#         images=[image] * len(label_list),
-#         padding="max_length",
-#         return_tensors="pt",
-#     )
-#     outputs = app.state.model(**inputs)
-
-#     preds = outputs.logits.unsqueeze(1).cpu()
-#     flat_preds = torch.sigmoid(preds.squeeze()).reshape((preds.shape[0], -1))
-#     flat_preds_with_treshold = torch.full(
-#         (preds.shape[0] + 1, flat_preds.shape[-1]), 0.5
-#     )  # threshold 변경 필요
-#     flat_preds_with_treshold[1 : preds.shape[0] + 1, :] = flat_preds
-#     inds = torch.topk(flat_preds_with_treshold, 1, dim=0).indices
-
-#     temp_list = []
-#     for i in inds.squeeze():
-#         temp_list.append(app.state.colors[i])
-#     image = cv2.resize(np.array(image), (preds.shape[-2], preds.shape[-1]))
-#     output = (
-#         np.array(temp_list)
-#         .T.reshape(3, preds.shape[-2], preds.shape[-1])
-#         .transpose(1, 2, 0)
-#         * 255
-#     )
-#     blended = cv2.addWeighted(image, 0.5, output, 0.5, 0, dtype=cv2.CV_8UC3)
-#     return np.clip(blended, 0, 255)
-
 
 @app.post("/zip_upload/")
 async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
@@ -160,18 +119,30 @@ async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
 
     with open(f"{ZIP_PATH}/{file_name}.zip", "wb") as f:
         f.write(content)
-    zipfile.ZipFile(f"{ZIP_PATH}/{file_name}.zip").extractall(f"data/{id}/original")
+    ZipFile(f"{ZIP_PATH}/{file_name}.zip").extractall(f"data/{id}/original")
+    # Convert PNG to JPG
+    for file in os.listdir(f"{FOLDER_DIR}/{id}/original/"):
+        if file.endswith('.png'):
+            path = f"{FOLDER_DIR}/{id}/original/{file.split('.')[0]}"
+            jpg_path = f"{path}.jpg"
+            img = Image.open(f"{path}.png").convert("RGB")
+            img.save(jpg_path)
+            os.remove(f"{path}.png")
+    
 
 
 @app.post("/segment/")
 async def segment(path: str = Form(...)):
     id, file_name = path.split("/")
+    # Change file name from a.png to a.jpg as file is converted to jpg
+    if file_name.endswith('.png'):
+        file_name = str(file_name.split('.')[0]) + '.jpg'
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
     img = Image.open(img_path).convert("RGB")
-    # if file_name.endswith(".png"):
-    #     jpg_path = f"{file_name.split('.')[0]}.jpg"
-    #     img.save(jpg_path)
-    #     img = Image.open(jpg_path)
+    if file_name.endswith(".png"):
+        jpg_path = f"{file_name.split('.')[0]}.jpg"
+        img.save(jpg_path)
+        img = Image.open(jpg_path)
     output = await segment_everything(img)
     output = output.convert("RGB")
     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
@@ -188,6 +159,9 @@ async def segment(path: str = Form(...)):
 async def segment_text(path: str = Form(...), text_prompt: str = Form(...)):
     box_threshold, text_threshold = 0.3, 0.3
     id, file_name = path.split("/")
+    # Change file name from a.png to a.jpg as file is converted to jpg
+    if file_name.endswith('.png'):
+        file_name = str(file_name.split('.')[0]) + '.jpg'
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
     if file_name.endswith(".png"):
         jpg_path = f"{file_name.split('.')[0]}.jpg"
@@ -208,12 +182,14 @@ async def segment_text(path: str = Form(...), text_prompt: str = Form(...)):
 @app.post("/json_download/")
 def json_download(path: str = Form(...)):
     id, file_name = path.split("/")
+    if file_name.endswith('.png'):
+        file_name = str(file_name.split('.')[0]) + '.jpg'
     file_name = file_name.split(".")[0]
     output = {
         "test" : [1, 2, 3, 4],
         "test2" : [5, 6, 7, 8]
     }
-    with open(f'{FOLDER_DIR}/{id}/{file_name}_segment.json' ,'w') as f:
+    with open(f'{FOLDER_DIR}/{id}/original/{file_name}_segment.json' ,'w') as f:
         json.dump(output, f, indent=2)
     return output
 
@@ -222,6 +198,14 @@ def json_download(path: str = Form(...)):
 def remove(id: str = Form(...)):
     if id == "":
         return 0
+    zip_file = ZipFile(f"{FOLDER_DIR}/{id}/zip.zip", 'w')
+    for file in os.listdir(f"{FOLDER_DIR}/{id}/original"):
+        zip_file.write(os.path.join(f"{FOLDER_DIR}/{id}/original", file))
+    zip_file.close()
+    '''
+    <TO BE IMPLEMENTED>
+    Send zipfile to airflow server using scp command
+    '''
     path_list = []
     path_list.append(f"{FOLDER_DIR}/{id}/original")
     path_list.append(f"{FOLDER_DIR}/{id}/segment")
