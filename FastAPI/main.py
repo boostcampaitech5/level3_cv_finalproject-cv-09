@@ -178,9 +178,6 @@ async def segment_text(path: str = Form(...), text_prompt: str = Form(...)):
         img.save(jpg_path)
         img_path = jpg_path
     text_seg_masks, segmented_image = await segment_dino(box_threshold, text_threshold, img_path, text_prompt = text_prompt)
-    text_seg_output = await segment_dino(
-        box_threshold, text_threshold, img_path, text_prompt=text_prompt
-    )
     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
         os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
     segmented_image.save(f"{FOLDER_DIR}/{id}/segment/dino_{file_name}")
