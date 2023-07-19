@@ -13,15 +13,19 @@ import sys
 from torchvision.utils import draw_segmentation_masks
 import time
 
+
 def draw_image(image, masks, alpha=0.4):
     image = torch.from_numpy(image).permute(2, 0, 1)
     if len(masks) > 0:
-        image = draw_segmentation_masks(image, masks=masks, colors=['cyan'] * len(masks), alpha=alpha)
+        image = draw_segmentation_masks(
+            image, masks=masks, colors=["cyan"] * len(masks), alpha=alpha
+        )
     return image.numpy().transpose(1, 2, 0)
+
 
 def zip_upload(img_zip, id):
     with ZipFile(img_zip.name, "r") as f:
-        f.extractall(f"data/{id}/original")
+        f.extractall(f"data/{id}")
     data = {"id": str(id)}
     with open(img_zip.name, "rb") as f:
         files = {"files": f}
@@ -50,7 +54,7 @@ def prev_img():
 
 
 def viz_img(id, path):
-    personal_path = f"{id}/original/{path}"
+    personal_path = f"{id}/{path}"
     return Image.open(os.path.join("data", personal_path))
 
 
@@ -64,7 +68,7 @@ def segment(id, img_path):
 # 현석이가 만들어 줄 것.
 def segment_text(id, img_path, text_prompt):
     start_time = time.time_ns() // 1_000_000
-    string_prompt = ' . '.join(text_prompt)
+    string_prompt = " . ".join(text_prompt)
     img_prefix = f"data/{id}"
     image_pil = Image.open(os.path.join(img_prefix, img_path)).convert("RGB")
     data = {"path": os.path.join(str(id), str(img_path)), "text_prompt": string_prompt}
