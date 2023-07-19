@@ -63,7 +63,6 @@ async def startup_event():
     
     # Lang-SAM load
     app.state.lang_sam = LangSAM(sam_type="vit_h", device = device)
-    app.state.lang_sam
     
 
 
@@ -169,10 +168,10 @@ async def segment(path: str = Form(...)):
     id, file_name = path.split("/")
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
     img = Image.open(img_path).convert("RGB")
-    if file_name.endswith(".png"):
-        jpg_path = f"{file_name.split('.')[0]}.jpg"
-        img.save(jpg_path)
-        img = Image.open(jpg_path)
+    # if file_name.endswith(".png"):
+    #     jpg_path = f"{file_name.split('.')[0]}.jpg"
+    #     img.save(jpg_path)
+    #     img = Image.open(jpg_path)
     output = await segment_everything(img)
     output = output.convert("RGB")
     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
