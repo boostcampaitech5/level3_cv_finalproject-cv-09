@@ -7,7 +7,8 @@ from PIL import Image
 from zipfile import ZipFile
 from utils.tools_gradio import fast_process
 from fastapi import FastAPI, UploadFile, File, Form
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.encoders import jsonable_encoder
 from PIL import Image
 from mobile_sam import SamAutomaticMaskGenerator, SamPredictor, sam_model_registry
 from lang_segment_anything.lang_sam import LangSAM
@@ -25,7 +26,6 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 @app.on_event("startup")
 async def startup_event():
-
     app.state.colors = [
         (0, 0, 0),
         (0.8196078431372549, 0.2901960784313726, 0.25882352941176473),
@@ -52,8 +52,21 @@ async def startup_event():
     app.state.predictor = SamPredictor(mobile_sam)
     
     # Lang-SAM load
-    # app.state.lang_sam = LangSAM(sam_type="vit_h", device = device)
-    
+    app.state.lang_sam = LangSAM(sam_type="vit_h", device = device)
+
+def rle_encode(mask):
+    """
+    다차원 텐서를 RLE 인코딩하는 함수
+
+    :param tensor: 3차원 텐서 (channel x height x width)
+    :return: RLE 인코딩된 문자열 리스트
+    """
+    mask_flatten = mask.flatten()
+    mask_flatten = np.concatenate([[0], mask_flatten, [0]])
+    runs = np.where(mask_flatten[1:] != mask_flatten[:-1])[0] + 1
+    runs[1::2] -= runs[::2]
+    rle = ' '.join(str(x) for x in runs)
+    return rle
 
 
 @torch.no_grad()
@@ -88,18 +101,18 @@ async def segment_everything(
     )
     return fig
 
+
 @torch.no_grad()
 async def segment_dino(box_threshold = 0.7, text_threshold = 0.7, image_path = "", text_prompt = "sky"):
-    image_pil = load_image(image_path)
-    masks, boxes, phrases, logits = app.state.lang_sam.predict(image_pil, text_prompt, box_threshold, text_threshold)
+    image_pil = load_image(image_path)  # width x height
+    masks, boxes, phrases, logits = app.state.lang_sam.predict(image_pil, text_prompt, box_threshold, text_threshold)   # channel x height x width
     labels = [f"{phrase} {logit:.2f}" for phrase, logit in zip(phrases, logits)]
-    print("masks : ", len(masks))
+    rle_mask = rle_encode(masks)
+    json_mask = json.dumps(masks.tolist())
     image_array = np.asarray(image_pil)
     image = draw_image(image_array, masks, boxes, labels)
     image = Image.fromarray(np.uint8(image)).convert("RGB")
-    print(image)
-    return image
-
+    return json_mask, image
 
 @app.post("/zip_upload/")
 async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
@@ -152,12 +165,19 @@ async def segment(path: str = Form(...)):
         f"{FOLDER_DIR}/{id}/segment/{file_name}",
         media_type="image/jpg",
     )
+    if file_name.endswith(".png"):
+        seg_img = FileResponse(
+            f"{FOLDER_DIR}/{id}/segment/{file_name}",
+            media_type="image/png",
+        )
     return seg_img
 
 
 @app.post("/segment_text/")
 async def segment_text(path: str = Form(...), text_prompt: str = Form(...)):
     box_threshold, text_threshold = 0.3, 0.3
+
+    text_prompt = text_prompt.replace(",", ".")
     id, file_name = path.split("/")
     # Change file name from a.png to a.jpg as file is converted to jpg
     if file_name.endswith('.png'):
@@ -168,15 +188,17 @@ async def segment_text(path: str = Form(...), text_prompt: str = Form(...)):
         img = Image.open(img_path).convert("RGB")
         img.save(jpg_path)
         img_path = jpg_path
-    text_seg_output = await segment_dino(box_threshold, text_threshold, img_path, text_prompt = text_prompt)
+    text_seg_masks, segmented_image = await segment_dino(box_threshold, text_threshold, img_path, text_prompt = text_prompt)
     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
         os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
-    text_seg_output.save(f"{FOLDER_DIR}/{id}/segment/dino_{file_name}")
-    seg_dino_img = FileResponse(
-        f"{FOLDER_DIR}/{id}/segment/dino_{file_name}",
-        media_type="image/jpg",
-    )
-    return seg_dino_img
+    segmented_image.save(f"{FOLDER_DIR}/{id}/segment/dino_{file_name}")
+    # mask_json = jsonable_encoder(text_seg_masks.tolist())
+    # seg_dino_img = FileResponse(
+    #     f"{FOLDER_DIR}/{id}/segment/dino_{file_name}",
+    #     media_type="image/jpg",
+    # )
+    output_reponse = JSONResponse(content=text_seg_masks)
+    return output_reponse
     
 
 @app.post("/json_download/")
@@ -185,11 +207,8 @@ def json_download(path: str = Form(...)):
     if file_name.endswith('.png'):
         file_name = str(file_name.split('.')[0]) + '.jpg'
     file_name = file_name.split(".")[0]
-    output = {
-        "test" : [1, 2, 3, 4],
-        "test2" : [5, 6, 7, 8]
-    }
-    with open(f'{FOLDER_DIR}/{id}/original/{file_name}_segment.json' ,'w') as f:
+    output = {"test": [1, 2, 3, 4], "test2": [5, 6, 7, 8]}
+    with open(f"{FOLDER_DIR}/{id}/{file_name}_segment.json", "w") as f:
         json.dump(output, f, indent=2)
     return output
 
@@ -213,4 +232,3 @@ def remove(id: str = Form(...)):
     for path in path_list:
         if os.path.isdir(path):
             shutil.rmtree(path)
-

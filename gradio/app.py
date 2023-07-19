@@ -6,18 +6,23 @@ from PIL import Image
 from zipfile import ZipFile
 import requests
 from collections import deque
+import shutil
+import torch
+import json
+import sys
+from torchvision.utils import draw_segmentation_masks
+import time
+
+def draw_image(image, masks, alpha=0.4):
+    image = torch.from_numpy(image).permute(2, 0, 1)
+    if len(masks) > 0:
+        image = draw_segmentation_masks(image, masks=masks, colors=['cyan'] * len(masks), alpha=alpha)
+    return image.numpy().transpose(1, 2, 0)
 
 def zip_upload(img_zip, id):
     with ZipFile(img_zip.name, "r") as f:
-        f.extractall(f"data/{id}")
+        f.extractall(f"data/{id}/original")
     data = {"id": str(id)}
-    # with open(img_zip.name, "rb") as f:
-    #     files = {"files": f}
-    #     res = requests.post(
-    #         "http://115.85.182.123:30008/zip_upload/",
-    #         data=data,
-    #         files=files,
-    #     )
     with open(img_zip.name, "rb") as f:
         files = {"files": f}
         res = requests.post(
@@ -45,37 +50,51 @@ def prev_img():
 
 
 def viz_img(id, path):
-    personal_path = f"{id}/{path}"
+    personal_path = f"{id}/original/{path}"
     return Image.open(os.path.join("data", personal_path))
 
 
 def segment(id, img_path):
     data = {"path": os.path.join(str(id), str(img_path))}
     seg = requests.post("http://118.67.142.203:30008/segment/", data=data)
+
     return Image.open(io.BytesIO(seg.content))
 
 
+# 현석이가 만들어 줄 것.
 def segment_text(id, img_path, text_prompt):
+    start_time = time.time_ns() // 1_000_000
     string_prompt = ' . '.join(text_prompt)
+    img_prefix = f"data/{id}"
+    image_pil = Image.open(os.path.join(img_prefix, img_path)).convert("RGB")
     data = {"path": os.path.join(str(id), str(img_path)), "text_prompt": string_prompt}
     seg = requests.post("http://118.67.142.203:30008/segment_text/", data=data)
-    return Image.open(io.BytesIO(seg.content))
+    masks = torch.tensor(json.loads(seg.json()))
+    image_array = np.asarray(image_pil)
+    image = draw_image(image_array, masks)
+    image = Image.fromarray(np.uint8(image)).convert("RGB")
+    end_time = time.time_ns() // 1_000_000
+    with open("no_rle.txt", "a") as f:
+        f.write(f"{(end_time - start_time)}\n")
+    return image
 
 
-def segment_reqest(id, img_path, text_prompt):
-    return segment(id, img_path), segment_text(id, img_path, text_prompt)
+def segment_request(id, img_path, text_prompt):
+    return segment(id, img_path), segment_text(
+        id, img_path, text_prompt
+    )  # 얘 output이 [(building_image1, "buildings1"), (building_image2, "buildings2")] 이런식으로 나와야함
 
 
 def json_download(id, img_path):
     data = {"path": os.path.join(str(id), str(img_path))}
-    res = requests.post("http://115.85.182.123:30008/json_download/", data=data)
+    res = requests.post("http://118.67.142.203:30008/json_download/", data=data)
     return res.content
-    
 
-# def remove(id):
-#     data = {"id": str(id)}
-#     res = requests.post("http://115.85.182.123:30008/remove/", data=data)
-#     return res.status_code
+
+def finish(id):
+    data = {"id": str(id)}
+    res = requests.post("http://118.67.142.203:30008/remove/", data=data)
+    shutil.rmtree(f"data/{str(id)}")  # 확인 필요
 
 
 # Description
@@ -91,13 +110,12 @@ def get_points(image, evt: gr.SelectData):
 
 
 cond_img_e = gr.Image(label="Input", type="pil")
-segm_img_e = gr.Image(label="Mobile SAM Image", interactive=False, type="pil")
+segm_img_e = gr.Image(label="Mobile SAM", interactive=False, type="pil")
+gdSAM_img_e = gr.AnnotatedImage(label="GDSAM", interactive=False, type="pil")
+
 id = gr.Textbox()
 img_list = gr.JSON()
 
-grounding_dino_SAM_img_e = gr.Image(
-    label="grounding_dino_SAM_img", interactive=False, type="pil"
-)
 my_theme = gr.Theme.from_hub("nuttea/Softblue")
 with gr.Blocks(
     css=css, title="Faster Segment Anything(MobileSAM)", theme=my_theme
@@ -122,10 +140,11 @@ with gr.Blocks(
             present_img = gr.Textbox(label="present Image name", interactive=False)
         with gr.Row():
             with gr.Column():
-                cond_img_e.render()
+                with gr.Tab("Original Image"):
+                    cond_img_e.render()
             with gr.Column():
                 with gr.Tab("Grounding Dino"):
-                    grounding_dino_SAM_img_e.render()
+                    gdSAM_img_e.render()
                 with gr.Tab("Segment Everything"):
                     segm_img_e.render()
         with gr.Row(variant="panel"):
@@ -148,6 +167,11 @@ with gr.Blocks(
                 request_btn_e = gr.Button("request", variant="primary")
         with gr.Row():
             coord_value = gr.Textbox(label="Preview annotation.json")
+        with gr.Row():
+            with gr.Column():
+                finish_btn_e = gr.Button("Finish")
+            with gr.Column():
+                save_btn_e = gr.Button("Save")
 
     ################ 1 page buttons ################
     set_label_btn_e.click(
@@ -168,10 +192,14 @@ with gr.Blocks(
     prev_btn_e.click(prev_img, outputs=present_img)
     next_btn_e.click(next_img, outputs=present_img)
     request_btn_e.click(
-        segment_reqest,
+        segment_request,
         inputs=[id, present_img, label_checkbox],
-        outputs=[segm_img_e, grounding_dino_SAM_img_e],
+        outputs=[
+            segm_img_e,
+            gdSAM_img_e,  # gdSAM얘는 [(building_image, "buildings")] 이런식으로 들어가야함.
+        ],
     )
+    finish_btn_e.click(finish, inputs=id)
     ################################################
 
     segm_img_e.select(get_points, inputs=[segm_img_e], outputs=[coord_value])
