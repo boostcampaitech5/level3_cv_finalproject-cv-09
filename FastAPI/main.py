@@ -111,12 +111,24 @@ async def segment_dino(box_threshold = 0.7, text_threshold = 0.7, image_path = "
     image_pil = load_image(image_path)  # width x height
     masks, boxes, phrases, logits = app.state.lang_sam.predict(image_pil, text_prompt, box_threshold, text_threshold)   # channel x height x width
     labels = [f"{phrase} {logit:.2f}" for phrase, logit in zip(phrases, logits)]
+    mask_dict = dict()
+    for idx, label in enumerate(labels):
+        label, logit = label.split()
+        print(masks[idx].shape)
+        if label in mask_dict:
+            mask1 = np.array(mask_dict[label])
+            mask2 = np.array(masks[idx].tolist())
+            or_mask = np.logical_or(mask1, mask2)
+            mask_dict[label] = or_mask.tolist()
+        else:
+            mask_dict[label] = masks[idx].tolist()
     rle_mask = rle_encode(masks)
+    json_rle = json.dumps(rle_mask)
     json_mask = json.dumps(masks.tolist())
     image_array = np.asarray(image_pil)
     image = draw_image(image_array, masks, boxes, labels)
     image = Image.fromarray(np.uint8(image)).convert("RGB")
-    return json_mask, image
+    return mask_dict, image
 
 @app.post("/zip_upload/")
 async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
@@ -177,7 +189,7 @@ async def segment_text(path: str = Form(...), text_prompt: str = Form(...)):
         img = Image.open(img_path).convert("RGB")
         img.save(jpg_path)
         img_path = jpg_path
-    text_seg_masks, segmented_image = await segment_dino(box_threshold, text_threshold, img_path, text_prompt = text_prompt)
+    text_seg_dict, segmented_image = await segment_dino(box_threshold, text_threshold, img_path, text_prompt = text_prompt)
     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
         os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
     segmented_image.save(f"{FOLDER_DIR}/{id}/segment/dino_{file_name}")
@@ -186,7 +198,7 @@ async def segment_text(path: str = Form(...), text_prompt: str = Form(...)):
     #     f"{FOLDER_DIR}/{id}/segment/dino_{file_name}",
     #     media_type="image/jpg",
     # )
-    output_reponse = JSONResponse(content=text_seg_masks)
+    output_reponse = JSONResponse(content=text_seg_dict)
     return output_reponse
     
 
