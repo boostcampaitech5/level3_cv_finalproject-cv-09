@@ -6,6 +6,7 @@ import zipfile
 import shutil
 import cv2
 import json
+from PIL import Image
 from transformers import CLIPSegProcessor, CLIPSegForImageSegmentation
 from utils.tools_gradio import fast_process
 from fastapi import FastAPI, UploadFile, File, Form
@@ -63,7 +64,6 @@ async def startup_event():
     
     # Lang-SAM load
     app.state.lang_sam = LangSAM(sam_type="vit_h", device = device)
-    app.state.lang_sam
     
 
 
@@ -169,7 +169,11 @@ async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
 async def segment(path: str = Form(...)):
     id, file_name = path.split("/")
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
-    img = Image.open(img_path)
+    img = Image.open(img_path).convert("RGB")
+    # if file_name.endswith(".png"):
+    #     jpg_path = f"{file_name.split('.')[0]}.jpg"
+    #     img.save(jpg_path)
+    #     img = Image.open(jpg_path)
     output = await segment_everything(img)
     output = output.convert("RGB")
     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
@@ -187,6 +191,11 @@ async def segment_text(path: str = Form(...), text_prompt: str = Form(...)):
     box_threshold, text_threshold = 0.3, 0.3
     id, file_name = path.split("/")
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
+    if file_name.endswith(".png"):
+        jpg_path = f"{file_name.split('.')[0]}.jpg"
+        img = Image.open(img_path).convert("RGB")
+        img.save(jpg_path)
+        img_path = jpg_path
     text_seg_masks, segmented_image = await segment_dino(box_threshold, text_threshold, img_path, text_prompt = text_prompt)
     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
         os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
