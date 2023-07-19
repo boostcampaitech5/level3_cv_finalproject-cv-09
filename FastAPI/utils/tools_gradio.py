@@ -14,7 +14,7 @@ def fast_process(
     mask_random_color=True,
     bbox=None,
     use_retina=True,
-    withContours=True,
+    withContours=False,
 ):
     if isinstance(annotations[0], dict):
         annotations = [annotation["segmentation"] for annotation in annotations]
