@@ -77,7 +77,10 @@ def segment_text(id, img_path, text_prompt):
     # print(type(json.loads(seg)))
     # print(json.loads(seg))
     # rle_mask = json.loads(seg)
-    masks = torch.tensor(json.loads(seg.json()))
+    # masks = torch.tensor(json.loads(seg.json()))
+    mask_dict = json.loads(seg.content)
+    for key, value in mask_dict.items():
+        print(key, torch.tensor(value).shape)
     image_array = np.asarray(image_pil)
     image = draw_image(image_array, masks)
     image = Image.fromarray(np.uint8(image)).convert("RGB")
