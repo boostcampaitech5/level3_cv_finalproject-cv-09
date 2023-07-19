@@ -67,17 +67,19 @@ def segment(id, img_path):
 
 
 def segment_text(id, img_path, text_prompt):
+    start_time = time.time_ns() // 1_000_000
     string_prompt = ' . '.join(text_prompt)
     img_prefix = f"data/{id}"
     image_pil = Image.open(os.path.join(img_prefix, img_path)).convert("RGB")
     data = {"path": os.path.join(str(id), str(img_path)), "text_prompt": string_prompt}
     seg = requests.post("http://118.67.142.203:30008/segment_text/", data=data)
-    print(type(seg))
-    print(torch.tensor(json.loads(seg.json())).shape)
     masks = torch.tensor(json.loads(seg.json()))
     image_array = np.asarray(image_pil)
     image = draw_image(image_array, masks)
     image = Image.fromarray(np.uint8(image)).convert("RGB")
+    end_time = time.time_ns() // 1_000_000
+    with open("no_rle.txt", "a") as f:
+        f.write(f"{(end_time - start_time)}\n")
     return image
 
 
