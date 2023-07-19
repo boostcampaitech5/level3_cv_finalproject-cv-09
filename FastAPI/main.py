@@ -55,16 +55,23 @@ async def startup_event():
 
     app.state.mask_generator = SamAutomaticMaskGenerator(mobile_sam)
     app.state.predictor = SamPredictor(mobile_sam)
-
-    # clip_seg load code
-    # app.state.processor = CLIPSegProcessor.from_pretrained("CIDAS/clipseg-rd64-refined")
-    # app.state.model = CLIPSegForImageSegmentation.from_pretrained(
-    #     "CIDAS/clipseg-rd64-refined"
-    # )
     
     # Lang-SAM load
     app.state.lang_sam = LangSAM(sam_type="vit_h", device = device)
-    
+
+def rle_encode(mask):
+    """
+    다차원 텐서를 RLE 인코딩하는 함수
+
+    :param tensor: 3차원 텐서 (channel x height x width)
+    :return: RLE 인코딩된 문자열 리스트
+    """
+    mask_flatten = mask.flatten()
+    mask_flatten = np.concatenate([[0], mask_flatten, [0]])
+    runs = np.where(mask_flatten[1:] != mask_flatten[:-1])[0] + 1
+    runs[1::2] -= runs[::2]
+    rle = ' '.join(str(x) for x in runs)
+    return rle
 
 
 @torch.no_grad()
@@ -101,48 +108,15 @@ async def segment_everything(
 
 @torch.no_grad()
 async def segment_dino(box_threshold = 0.7, text_threshold = 0.7, image_path = "", text_prompt = "sky"):
-    image_pil = load_image(image_path)
-    print("image size : ", image_pil.size) # width x height
-    masks, boxes, phrases, logits = app.state.lang_sam.predict(image_pil, text_prompt, box_threshold, text_threshold)
+    image_pil = load_image(image_path)  # width x height
+    masks, boxes, phrases, logits = app.state.lang_sam.predict(image_pil, text_prompt, box_threshold, text_threshold)   # channel x height x width
     labels = [f"{phrase} {logit:.2f}" for phrase, logit in zip(phrases, logits)]
-    print("masks : ", masks.shape)  # channel x height x width
+    rle_mask = rle_encode(masks)
     json_mask = json.dumps(masks.tolist())
     image_array = np.asarray(image_pil)
     image = draw_image(image_array, masks, boxes, labels)
     image = Image.fromarray(np.uint8(image)).convert("RGB")
     return json_mask, image
-
-# @torch.no_grad()
-# def clip_segmentation(image, label_list):
-#     inputs = app.state.processor(
-#         text=label_list,
-#         images=[image] * len(label_list),
-#         padding="max_length",
-#         return_tensors="pt",
-#     )
-#     outputs = app.state.model(**inputs)
-
-#     preds = outputs.logits.unsqueeze(1).cpu()
-#     flat_preds = torch.sigmoid(preds.squeeze()).reshape((preds.shape[0], -1))
-#     flat_preds_with_treshold = torch.full(
-#         (preds.shape[0] + 1, flat_preds.shape[-1]), 0.5
-#     )  # threshold 변경 필요
-#     flat_preds_with_treshold[1 : preds.shape[0] + 1, :] = flat_preds
-#     inds = torch.topk(flat_preds_with_treshold, 1, dim=0).indices
-
-#     temp_list = []
-#     for i in inds.squeeze():
-#         temp_list.append(app.state.colors[i])
-#     image = cv2.resize(np.array(image), (preds.shape[-2], preds.shape[-1]))
-#     output = (
-#         np.array(temp_list)
-#         .T.reshape(3, preds.shape[-2], preds.shape[-1])
-#         .transpose(1, 2, 0)
-#         * 255
-#     )
-#     blended = cv2.addWeighted(image, 0.5, output, 0.5, 0, dtype=cv2.CV_8UC3)
-#     return np.clip(blended, 0, 255)
-
 
 @app.post("/zip_upload/")
 async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
