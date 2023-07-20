@@ -1,19 +1,15 @@
 import os
 import torch
-import matplotlib.pyplot as plt
 import numpy as np
-import zipfile
 import shutil
-import cv2
 import json
 from PIL import Image
-from transformers import CLIPSegProcessor, CLIPSegForImageSegmentation
+from zipfile import ZipFile
 from utils.tools_gradio import fast_process
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.encoders import jsonable_encoder
 from PIL import Image
-from torchvision import transforms
 from mobile_sam import SamAutomaticMaskGenerator, SamPredictor, sam_model_registry
 from lang_segment_anything.lang_sam import LangSAM
 from lang_segment_anything.lang_sam import SAM_MODELS
@@ -148,18 +144,30 @@ async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
 
     with open(f"{ZIP_PATH}/{file_name}.zip", "wb") as f:
         f.write(content)
-    zipfile.ZipFile(f"{ZIP_PATH}/{file_name}.zip").extractall(f"data/{id}/original")
+    ZipFile(f"{ZIP_PATH}/{file_name}.zip").extractall(f"data/{id}/original")
+    # Convert PNG to JPG
+    for file in os.listdir(f"{FOLDER_DIR}/{id}/original/"):
+        if file.endswith('.png'):
+            path = f"{FOLDER_DIR}/{id}/original/{file.split('.')[0]}"
+            jpg_path = f"{path}.jpg"
+            img = Image.open(f"{path}.png").convert("RGB")
+            img.save(jpg_path)
+            os.remove(f"{path}.png")
+    
 
 
 @app.post("/segment/")
 async def segment(path: str = Form(...)):
     id, file_name = path.split("/")
+    # Change file name from a.png to a.jpg as file is converted to jpg
+    if file_name.endswith('.png'):
+        file_name = str(file_name.split('.')[0]) + '.jpg'
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
     img = Image.open(img_path).convert("RGB")
-    # if file_name.endswith(".png"):
-    #     jpg_path = f"{file_name.split('.')[0]}.jpg"
-    #     img.save(jpg_path)
-    #     img = Image.open(jpg_path)
+    if file_name.endswith(".png"):
+        jpg_path = f"{file_name.split('.')[0]}.jpg"
+        img.save(jpg_path)
+        img = Image.open(jpg_path)
     output = await segment_everything(img)
     output = output.convert("RGB")
     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
@@ -183,6 +191,9 @@ async def segment_text(path: str = Form(...), text_prompt: str = Form(...)):
 
     text_prompt = text_prompt.replace(",", ".")
     id, file_name = path.split("/")
+    # Change file name from a.png to a.jpg as file is converted to jpg
+    if file_name.endswith('.png'):
+        file_name = str(file_name.split('.')[0]) + '.jpg'
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
     if file_name.endswith(".png"):
         jpg_path = f"{file_name.split('.')[0]}.jpg"
@@ -205,6 +216,8 @@ async def segment_text(path: str = Form(...), text_prompt: str = Form(...)):
 @app.post("/json_download/")
 def json_download(path: str = Form(...)):
     id, file_name = path.split("/")
+    if file_name.endswith('.png'):
+        file_name = str(file_name.split('.')[0]) + '.jpg'
     file_name = file_name.split(".")[0]
     output = {"test": [1, 2, 3, 4], "test2": [5, 6, 7, 8]}
     with open(f"{FOLDER_DIR}/{id}/{file_name}_segment.json", "w") as f:
@@ -216,6 +229,14 @@ def json_download(path: str = Form(...)):
 def remove(id: str = Form(...)):
     if id == "":
         return 0
+    zip_file = ZipFile(f"{FOLDER_DIR}/{id}/zip.zip", 'w')
+    for file in os.listdir(f"{FOLDER_DIR}/{id}/original"):
+        zip_file.write(os.path.join(f"{FOLDER_DIR}/{id}/original", file))
+    zip_file.close()
+    '''
+    <TO BE IMPLEMENTED>
+    Send zipfile to airflow server using scp command
+    '''
     path_list = []
     path_list.append(f"{FOLDER_DIR}/{id}/original")
     path_list.append(f"{FOLDER_DIR}/{id}/segment")
