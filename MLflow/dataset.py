@@ -98,8 +98,7 @@ class CustomCityscapesSegmentation(torch.utils.data.Dataset):
     
     
 class CustomKRLoadSegmentation(torch.utils.data.Dataset):
-    KRLoadClass = namedtuple('KRLoadClass', ['name', 'id', 'train_id', 'category', 'category_id',
-                                                     'has_instances', 'ignore_in_eval', 'color'])
+    KRLoadClass = namedtuple('KRLoadClass', ['name', 'id', 'color'])
 
     classes = [
         KRLoadClass('background', 0, (0,0,0)),
@@ -126,7 +125,7 @@ class CustomKRLoadSegmentation(torch.utils.data.Dataset):
 
     cmap = []
     for i in classes:
-        if i.train_id >=0 and i.train_id <19:
+        if i.id >=0 and i.id <19:
             cmap.append(i.color)
 
     def __init__(self, data_dir, image_set="train", transform=None, target_transform=None):
@@ -137,8 +136,8 @@ class CustomKRLoadSegmentation(torch.utils.data.Dataset):
         self.transform = transform
         self.target_transform = target_transform
 
-        self.path_png = os.path.join(data_dir,'imgs',image_set)
-        self.path_mask = os.path.join(data_dir,'labels',image_set)
+        self.path_png = os.path.join(data_dir,image_set,'imgs')
+        self.path_mask = os.path.join(data_dir,image_set,'labels')
         self.images = []
         self.targets = []
 
@@ -159,10 +158,6 @@ class CustomKRLoadSegmentation(torch.utils.data.Dataset):
 
         image = np.array(image,dtype=np.uint8)
         target = np.array(target,dtype=np.uint8)
-        
-        for l in self.classes:
-            idx = target==l.id
-            target[idx] = l.train_id
 
         image = Image.fromarray(image)
         target = Image.fromarray(target)

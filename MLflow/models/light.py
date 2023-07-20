@@ -12,6 +12,7 @@ class PLModel(pl.LightningModule):
         self.args = args
         self.train_score = torchmetrics.Dice(multiclass=True,num_classes=args.num_classes)
         self.val_score = torchmetrics.Dice(multiclass=True,num_classes=args.num_classes)
+        self.test_score = torchmetrics.Dice(multiclass=True,num_classes=args.num_classes)
         self.best_score = 0
         
         self.training_step_outputs = []
@@ -55,7 +56,6 @@ class PLModel(pl.LightningModule):
         x, y = batch
         y = y.squeeze(1).type(torch.long)
         logits = self.forward(x)
-        print(type(logits), type(y))
         loss = nn.functional.cross_entropy(logits,y)
         pred = logits.argmax(dim=1)
         
@@ -79,6 +79,21 @@ class PLModel(pl.LightningModule):
         self.validation_step_outputs.clear()
         self.val_score.reset()
         
-
+        
+    def test_step(self,batch, batch_idx):
+        x, y = batch
+        y = y.squeeze(1).type(torch.long)
+        logits = self.forward(x)
+        pred = logits.argmax(dim=1)
+        
+        self.test_score(pred,y)
+        
+        
+    def on_test_epoch_end(self) -> None:
+        self.test_score = self.test_score.compute()
+        self.log("test_score",self.test_score)
+        self.test_score.reset()
+        
+    
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(),lr=self.args.lr)

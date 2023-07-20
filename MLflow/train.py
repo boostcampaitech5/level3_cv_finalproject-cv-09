@@ -2,7 +2,7 @@ import mlflow
 import mlflow.pytorch
 from mlflow.tracking import MlflowClient
 import torch
-from torchvision import datasets, transforms
+from torchvision import transforms
 import argparse
 from datetime import datetime
 from pytorch_lightning.loggers.mlflow import MLFlowLogger
@@ -10,10 +10,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from utils import seed_everything
 import os
 import pytz
-import numpy as np
-from PIL import Image
-from collections import namedtuple
-from dataset import CustomCityscapesSegmentation
+from dataset import CustomCityscapesSegmentation, CustomKRLoadSegmentation
 from models.light import PLModel
 import pytorch_lightning as pl
 
@@ -21,6 +18,7 @@ import pytorch_lightning as pl
 def get_arg():
     parser = argparse.ArgumentParser(description="mlflow-pytorch test")
     parser.add_argument("--batch",type=int, default=2)
+    parser.add_argument("--val_batch",type=int, default=4)
     parser.add_argument("--lr",type=float, default=1e-3)
     parser.add_argument("--epochs",type=int,default=2)
     parser.add_argument("--accelerator", choices=['cpu','gpu','auto'],default='gpu')
@@ -60,11 +58,13 @@ def run(args):
     experiment_id = experiment.experiment_id
     
     runs = client.search_runs(experiment_id)
+    best_score = 0
     if len(runs):
-        best_runs = max(runs, key=lambda r: r.data.metrics['best_score'])
-        best_score = best_runs.data.metrics['best_score']
-    else:
-        best_score= 0 
+        for run in runs:
+            if 'test_score' in run.data.metrics:
+                best_score = max(run.data.metrics['test_score'],best_score)
+        # best_runs = max(runs, key=lambda r: r.data.metrics['test_score'])
+        # best_score = best_runs.data.metrics['test_score']
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     batch_size = args.batch
@@ -75,23 +75,35 @@ def run(args):
         transform = transforms.ToTensor(),
         target_transform = transforms.PILToTensor(),
         )
-    test_data = CustomCityscapesSegmentation(
+    
+    
+    val_data = CustomCityscapesSegmentation(
         data_dir = os.path.join(base_path,'data','cityscape'),
-        image_set="test",
+        image_set="val",
         transform = transforms.ToTensor(),
         target_transform = transforms.PILToTensor(),
         )
     
+    test_data = CustomKRLoadSegmentation(
+        data_dir = os.path.join(base_path,'data','krload'),
+        image_set='test',
+        transform = transforms.ToTensor(),
+        target_transform = transforms.PILToTensor(),
+    )
+    
     train_loader = torch.utils.data.DataLoader(dataset = train_data,
-                                               batch_size = batch_size, shuffle = True,
+                                               batch_size = args.batch, shuffle = True,
                                                )
+    val_loader = torch.utils.data.DataLoader(dataset = val_data,
+                                                batch_size = args.val_batch, shuffle = False,
+                                               )
+    
     test_loader = torch.utils.data.DataLoader(dataset = test_data,
-                                                batch_size = batch_size, shuffle = False,
+                                                batch_size = args.val_batch, shuffle = False,
                                                )
     
     # lighiting model 선언
     model = PLModel(args=args)
-    
     
     run_name = datetime.now(pytz.timezone('Asia/Seoul')).strftime("%Y%m%d%H%M")
     mlflow.pytorch.autolog()
@@ -105,7 +117,7 @@ def run(args):
         )
         # logger
         mlf_logger = MLFlowLogger(
-            experiment_name="mlflow_test",
+            experiment_name=args.experiment_name,
             run_id=run.info.run_id,
             tracking_uri=tracking_uri
         )
@@ -120,15 +132,18 @@ def run(args):
             )
         
         # model train
-        trainer.fit(model,train_loader,test_loader)
-        
-        # 현재 score뽑기
-        active_run = mlflow.get_run(run_id=run.info.run_id)
-        
-        current_score = active_run.data.metrics['best_score']
+        trainer.fit(model,train_loader,val_loader)
         
         # load best model using checkpoint
         model.load_from_checkpoint(checkpoint_path = checkpoint_callback.best_model_path, args=args)
+        
+        # model test
+        trainer.test(model,test_loader)
+        # 현재 score뽑기
+        active_run = mlflow.get_run(run_id=run.info.run_id)
+        
+        current_score = active_run.data.metrics['test_score']
+        
         mlflow.pytorch.log_model(
             pytorch_model = model, 
             artifact_path = "model",
