@@ -18,4 +18,5 @@ logs
 data/
 mlruns/
 FastAPI/data
+checkpoint/
 

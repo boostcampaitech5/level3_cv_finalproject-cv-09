@@ -61,17 +61,13 @@ def test(model, image):
 
 def get_arg():
     parser = argparse.ArgumentParser(description="mlflow-pytorch test")
-    parser.add_argument("--batch",type=int, default=2)
-    parser.add_argument("--lr",type=float, default=1e-3)
-    parser.add_argument("--epochs",type=int,default=2)
     parser.add_argument("--accelerator", choices=['cpu','gpu','auto'],default='gpu')
     parser.add_argument("--precision", choices=['32','16'],default='16')
-    parser.add_argument("--seed", type=int , default=42)
     parser.add_argument("--regist_name", type=str, default="register_model")
     parser.add_argument("--bn_type", type=str, default= 'torchbn')
     parser.add_argument("--num_classes", type=int, default= 19)
     parser.add_argument("--backbone", type=str, default='hrnet48')
-    parser.add_argument("--pretrained", type=str, default=None)
+    parser.add_argument("--pretrained", type=str, default='/opt/ml/level3_cv_finalproject-cv-09/MLflow/checkpoint/best.pth')
     parser.add_argument("--experiment_name",type=str, default='mlflow_ex')
     
     args = parser.parse_args()
