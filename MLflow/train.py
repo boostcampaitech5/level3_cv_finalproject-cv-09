@@ -30,7 +30,7 @@ def get_arg():
     parser.add_argument("--bn_type", type=str, default= 'torchbn')
     parser.add_argument("--num_classes", type=int, default= 19)
     parser.add_argument("--backbone", type=str, default='hrnet48')
-    parser.add_argument("--pretrained", type=str, default=None)
+    parser.add_argument("--pretrained", type=str, default='/opt/ml/level3_cv_finalproject-cv-09/MLflow/checkpoint/best.pth')
     parser.add_argument("--experiment_name",type=str, default='mlflow_ex')
     
     args = parser.parse_args()

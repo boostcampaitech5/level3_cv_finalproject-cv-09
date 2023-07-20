@@ -95,3 +95,81 @@ class CustomCityscapesSegmentation(torch.utils.data.Dataset):
             target = self.transform(target)
             
         return image, target
+    
+    
+class CustomKRLoadSegmentation(torch.utils.data.Dataset):
+    KRLoadClass = namedtuple('KRLoadClass', ['name', 'id', 'train_id', 'category', 'category_id',
+                                                     'has_instances', 'ignore_in_eval', 'color'])
+
+    classes = [
+        KRLoadClass('background', 0, (0,0,0)),
+        KRLoadClass('wheelchair', 1, (255, 0, 0)),
+        KRLoadClass('truck', 2, (0, 255, 0)),
+        KRLoadClass('traffic_sign', 3, (0, 0, 255)),
+        KRLoadClass('traffic_light',4, (255, 0, 255)),
+        KRLoadClass('stroller', 5, (255, 255, 0 )),
+        KRLoadClass('stop', 6, (0 ,255, 255)),
+        KRLoadClass('scooter', 7, (128, 128, 0)),
+        KRLoadClass('pole', 8, (0, 128, 128)),
+        KRLoadClass('person', 9, (128, 0, 128)),
+        KRLoadClass('motorcycle', 10, (128, 0, 255)),
+        KRLoadClass('dog', 11, (255, 128, 255)),
+        KRLoadClass('cat', 12, (64, 0, 0)),
+        KRLoadClass('carrier', 13, (0, 64, 0)),
+        KRLoadClass('car', 14, (0, 0, 64)),
+        KRLoadClass('bus', 15, (64, 64, 0)),
+        KRLoadClass('bollard', 16, (64, 0, 64)),
+        KRLoadClass('bicycle', 17, (0, 64, 64)),
+        KRLoadClass('barricade', 18, (0, 192, 0)),
+    ]
+    class_names = [i.name for i in classes]
+
+    cmap = []
+    for i in classes:
+        if i.train_id >=0 and i.train_id <19:
+            cmap.append(i.color)
+
+    def __init__(self, data_dir, image_set="train", transform=None, target_transform=None):
+        self._ignore_index = [255]
+        
+        self.data_dir = data_dir
+        self.image_set = image_set
+        self.transform = transform
+        self.target_transform = target_transform
+
+        self.path_png = os.path.join(data_dir,'imgs',image_set)
+        self.path_mask = os.path.join(data_dir,'labels',image_set)
+        self.images = []
+        self.targets = []
+
+        for folders in os.listdir(self.path_png):
+            img_dir = os.path.join(self.path_png,folders)
+            target_dir = os.path.join(self.path_mask,folders)
+            for file_name in os.listdir(img_dir):
+                if os.path.exists(os.path.join(target_dir,file_name)):
+                    self.images.append(os.path.join(img_dir,file_name))
+                    self.targets.append(os.path.join(target_dir,file_name))
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, index):
+        image = Image.open(self.images[index]).convert('RGB')
+        target = Image.open(self.targets[index])
+
+        image = np.array(image,dtype=np.uint8)
+        target = np.array(target,dtype=np.uint8)
+        
+        for l in self.classes:
+            idx = target==l.id
+            target[idx] = l.train_id
+
+        image = Image.fromarray(image)
+        target = Image.fromarray(target)
+
+        if self.transform is not None:
+            image = self.transform(image)
+        if self.target_transform is not None:
+            target = self.transform(target)
+            
+        return image, target
