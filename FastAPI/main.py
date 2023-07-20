@@ -43,7 +43,7 @@ async def startup_event():
 
 def change_path(path):
     if path.endswith('.png'):
-        path = str(path.split('.')[0] + '.png')
+        path = str(path.split('.')[0] + '.jpg')
     return path
         
 
