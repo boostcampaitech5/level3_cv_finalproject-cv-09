@@ -6,8 +6,9 @@ import tqdm
 import argparse
 import torch
 from models.light import PLModel
-from dataset import CustomCityscapesSegmentation
 import torch.nn.functional as F
+import cv2
+from dataset import CustomCityscapesSegmentation
 
 # def encode_mask_to_rle(mask):
 #     '''
@@ -82,6 +83,7 @@ def process_image_and_get_masks(img):
     convert_tensor = transforms.ToTensor()
     image = convert_tensor(img)
     image = image.unsqueeze(0)
+    print(image.shape)
 
     # Initialize the lighiting model
     model = PLModel(args=args)
@@ -91,12 +93,30 @@ def process_image_and_get_masks(img):
 
     return masks
 
+def mask_color(mask,cmap):
+    if isinstance(mask,np.ndarray):
+        r_mask = np.zeros_like(mask,dtype=np.uint8)
+        g_mask = np.zeros_like(mask,dtype=np.uint8)
+        b_mask = np.zeros_like(mask,dtype=np.uint8)
+        for k in range(len(cmap)):
+            indice = mask==k
+            r_mask[indice] = cmap[k][0]
+            g_mask[indice] = cmap[k][1]
+            b_mask[indice] = cmap[k][2]
+        return np.stack([b_mask, g_mask, r_mask], axis=2)
 
 
 if __name__=="__main__":
-    img = Image.open("/opt/ml/level3_cv_finalproject-cv-09/MLflow/도시.png")
+    img = Image.open("/opt/ml/level3_cv_finalproject-cv-09/MLflow/car_train.jpeg")
 
     mask = process_image_and_get_masks(img)
 
     print(mask.shape)
-    
+
+    # 이미지 저장
+    out = np.squeeze(np.argmax(mask,axis=1),axis=0)
+    print(out.shape,out.dtype,out.max())
+
+    out = mask_color(out,CustomCityscapesSegmentation.cmap)
+
+    cv2.imwrite('./mask_for_city.jpg', out)

@@ -98,8 +98,7 @@ class CustomCityscapesSegmentation(torch.utils.data.Dataset):
     
     
 class CustomKRLoadSegmentation(torch.utils.data.Dataset):
-    KRLoadClass = namedtuple('KRLoadClass', ['name', 'id', 'train_id', 'category', 'category_id',
-                                                     'has_instances', 'ignore_in_eval', 'color'])
+    KRLoadClass = namedtuple('KRLoadClass', ['name', 'id', 'color'])
 
     classes = [
         KRLoadClass('background', 0, (0,0,0)),
@@ -126,7 +125,7 @@ class CustomKRLoadSegmentation(torch.utils.data.Dataset):
 
     cmap = []
     for i in classes:
-        if i.train_id >=0 and i.train_id <19:
+        if i.id >=0 and i.id <19:
             cmap.append(i.color)
 
     def __init__(self, data_dir, image_set="train", transform=None, target_transform=None):
