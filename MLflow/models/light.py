@@ -1,4 +1,4 @@
-from models.hrnet import HRNet_W48_ASPOCR
+from models.hrnet import HRNet_W48_OCR
 import pytorch_lightning as pl
 import torchmetrics
 import torch
@@ -8,7 +8,7 @@ import torch.nn as nn
 class PLModel(pl.LightningModule):
     def __init__(self,args):
         super().__init__()
-        self.net = HRNet_W48_ASPOCR(args)
+        self.net = HRNet_W48_OCR(args)
         self.args = args
         self.train_score = torchmetrics.Dice(multiclass=True,num_classes=args.num_classes)
         self.val_score = torchmetrics.Dice(multiclass=True,num_classes=args.num_classes)
@@ -16,7 +16,14 @@ class PLModel(pl.LightningModule):
         
         self.training_step_outputs = []
         self.validation_step_outputs = []
-        
+
+        if args.pretrained:
+            self.load_model(args.pretrained)
+    
+    def load_model(self,path):
+        state_dict = torch.load(path)['state_dict']
+        self.net.load_state_dict(state_dict)
+    
     def forward(self,x):
         return self.net(x)
 
@@ -48,6 +55,7 @@ class PLModel(pl.LightningModule):
         x, y = batch
         y = y.squeeze(1).type(torch.long)
         logits = self.forward(x)
+        print(type(logits), type(y))
         loss = nn.functional.cross_entropy(logits,y)
         pred = logits.argmax(dim=1)
         
