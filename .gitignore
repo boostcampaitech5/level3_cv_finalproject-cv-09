@@ -19,4 +19,3 @@ data/
 mlruns/
 FastAPI/data
 checkpoint/
-

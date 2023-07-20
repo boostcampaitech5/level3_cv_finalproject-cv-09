@@ -23,7 +23,7 @@ def draw_image(image, masks, alpha=0.4):
     return image.numpy().transpose(1, 2, 0)
 
 
-def zip_upload(img_zip, id):
+def zip_upload(is_drive, img_zip, id):
     with ZipFile(img_zip.name, "r") as f:
         f.extractall(f"data/{id}")
     data = {"id": str(id)}
@@ -79,15 +79,17 @@ def segment_text(id, img_path, text_prompt):
     # rle_mask = json.loads(seg)
     # masks = torch.tensor(json.loads(seg.json()))
     mask_dict = json.loads(seg.content)
+    temp = []
     for key, value in mask_dict.items():
-        print(key, torch.tensor(value).shape)
-    image_array = np.asarray(image_pil)
-    image = draw_image(image_array, masks)
-    image = Image.fromarray(np.uint8(image)).convert("RGB")
-    end_time = time.time_ns() // 1_000_000
-    with open("no_rle.txt", "a") as f:
-        f.write(f"{(end_time - start_time)}\n")
-    return image
+        temp.append((np.array(value), key))
+
+    # /image_array = np.asarray(image_pil)
+    # image = draw_image(image_array, masks)
+    # image = Image.fromarray(np.uint8(image)).convert("RGB")
+    # end_time = time.time_ns() // 1_000_000
+    # with open("no_rle.txt", "a") as f:
+    #    f.write(f"{(end_time - start_time)}\n")
+    return image_pil, temp
 
 
 def segment_request(id, img_path, text_prompt):
@@ -122,11 +124,11 @@ def get_points(image, evt: gr.SelectData):
 
 cond_img_e = gr.Image(label="Input", type="pil")
 segm_img_e = gr.Image(label="Mobile SAM", interactive=False, type="pil")
-gdSAM_img_e = gr.AnnotatedImage(label="GDSAM", interactive=False, type="pil")
+gdSAM_img_e = gr.AnnotatedImage(label="GDSAM", interactive=False)
 
 id = gr.Textbox()
 img_list = gr.JSON()
-
+drive_data = gr.Radio(["drive dataset", "others"])
 my_theme = gr.Theme.from_hub("nuttea/Softblue")
 with gr.Blocks(
     css=css, title="Faster Segment Anything(MobileSAM)", theme=my_theme
@@ -136,7 +138,10 @@ with gr.Blocks(
             gr.Markdown(title)
     with gr.Tab("file upload Tab"):
         gr.Interface(
-            zip_upload, inputs=["file", id], outputs=img_list, allow_flagging="never"
+            zip_upload,
+            inputs=[drive_data, "file", id],
+            outputs=img_list,
+            allow_flagging="never",
         )
         label_list = gr.Textbox(
             label="Input entire label list that separated ,",
