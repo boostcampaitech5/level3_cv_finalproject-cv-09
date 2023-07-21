@@ -51,7 +51,7 @@ def rle_encode(mask):
     """
     다차원 텐서를 RLE 인코딩하는 함수
 
-    :param tensor: 3차원 텐서 (channel x height x width)
+    :param tensor: 2차원 텐서 (height x width)
     :return: RLE 인코딩된 문자열 리스트
     """
     mask_flatten = mask.flatten()
@@ -104,21 +104,23 @@ async def segment_dino(
         image_pil, text_prompt, box_threshold, text_threshold
     )  # channel x height x width
     labels = [f"{phrase} {logit:.2f}" for phrase, logit in zip(phrases, logits)]
-    mask_dict = dict()
+    mask_dict = {"masks": dict(), "size": [image_pil.height, image_pil.width]}
     for idx, label in enumerate(labels):
         label, logit = label.split()
         print(label, logit)
         print(masks[idx].shape)
-        if label in mask_dict:
-            mask1 = np.array(mask_dict[label])
-            mask2 = np.array(masks[idx].tolist())
+        if label in mask_dict["masks"]:
+            mask1 = np.array(mask_dict["masks"][label])
+            mask2 = np.array(masks[idx])
             or_mask = np.logical_or(mask1, mask2)
-            mask_dict[label] = or_mask.tolist()
+            mask_dict["masks"][label] = torch.tensor(or_mask)
         else:
-            mask_dict[label] = masks[idx].tolist()
-    rle_mask = rle_encode(masks)
-    json_rle = json.dumps(rle_mask)
-    json_mask = json.dumps(masks.tolist())
+            mask_dict["masks"][label] = torch.tensor(masks[idx])
+    for label, mask in mask_dict["masks"].items():
+        rle_mask = rle_encode(mask)
+        mask_dict["masks"][label] = rle_mask
+        print(label, mask_dict["masks"][label])
+    print(mask_dict["size"])
     image_array = np.asarray(image_pil)
     image = draw_image(image_array, masks, boxes, labels)
     image = Image.fromarray(np.uint8(image)).convert("RGB")
@@ -181,7 +183,7 @@ async def segment_text(
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
     text_prompt = text_prompt.replace(",", ".")
     text_seg_dict, segmented_image = await segment_dino(
-        box_threshold, text_threshold, img_path, text_prompt=text_prompt
+        threshold, threshold, img_path, text_prompt=text_prompt
     )
     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
         os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
