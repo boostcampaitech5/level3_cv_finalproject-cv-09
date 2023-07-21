@@ -104,10 +104,9 @@ async def segment_dino(box_threshold = 0.7, text_threshold = 0.7, image_path = "
         phrases[idx] = phrase.replace(" ", "_")
     labels = [f"{phrase} {logit:.2f}" for phrase, logit in zip(phrases, logits)]
     mask_dict = {"masks" : dict(), "size": [image_pil.height, image_pil.width]}
+    print(mask_dict['size'])
     for idx, label in enumerate(labels):
         label, logit = label.split()
-        print(label, logit)
-        print(masks[idx].shape)
         if label in mask_dict["masks"]:
             mask1 = np.array(mask_dict["masks"][label])
             mask2 = np.array(masks[idx])
@@ -118,8 +117,6 @@ async def segment_dino(box_threshold = 0.7, text_threshold = 0.7, image_path = "
     for label, mask in mask_dict["masks"].items():
         rle_mask = rle_encode(mask)
         mask_dict["masks"][label] = rle_mask
-        print(label, mask_dict["masks"][label])
-    print(mask_dict['size'])
     image_array = np.asarray(image_pil)
     image = draw_image(image_array, masks, boxes, labels)
     image = Image.fromarray(np.uint8(image)).convert("RGB")

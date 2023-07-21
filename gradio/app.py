@@ -78,31 +78,18 @@ def segment(id, img_path):
 
 # 현석이가 만들어 줄 것.
 def segment_text(id, img_path, text_prompt, threshold):
-    start_time = time.time_ns() // 1_000_000
+    global annotation_info
     string_prompt = " . ".join(text_prompt)
     img_prefix = f"data/{id}"
     image_pil = Image.open(os.path.join(img_prefix, img_path)).convert("RGB")
     data = {"path": os.path.join(str(id), str(img_path)), "text_prompt": string_prompt, "threshold": threshold}
     seg = requests.post("http://118.67.142.203:30008/segment_text/", data=data)
-    # print(type(seg))
-    # print(type(json.loads(seg)))
-    # print(json.loads(seg))
-    # rle_mask = json.loads(seg)
-    # masks = torch.tensor(json.loads(seg.json()))
     mask_dict = json.loads(seg.content)
+    annotation_info = mask_dict
     temp = []
     for label, mask in mask_dict["masks"].items():
         seg_mask = rle_decode(mask, mask_dict['size'])
         temp.append((np.array(seg_mask), label))
-        # mask_dict["masks"][label] = seg_mask
-    # for key, value in mask_dict.items():
-    #     temp.append((np.array(value), key))
-    # /image_array = np.asarray(image_pil)
-    # image = draw_image(image_array, masks)
-    # image = Image.fromarray(np.uint8(image)).convert("RGB")
-    end_time = time.time_ns() // 1_000_000
-    with open("no_rle.txt", "a") as f:
-       f.write(f"{(end_time - start_time)}\n")
     return image_pil, temp
 
 
@@ -123,7 +110,13 @@ def finish(id):
     res = requests.post("http://118.67.142.203:30008/remove/", data=data)
     shutil.rmtree(f"data/{str(id)}")  # 확인 필요
 
-
+def save_annotation():
+    global annotation_info
+    file_path = "data.json"  # 저장할 파일 경로 및 이름
+    with open(file_path, "w") as json_file:
+        json.dump(annotation_info, json_file, indent=4)
+    
+    
 # Description
 title = "<center><strong><font size='8'>Image Annotation Tool<font></strong></center>"
 
@@ -142,6 +135,7 @@ gdSAM_img_e = gr.AnnotatedImage(label="GDSAM", interactive=False)
 
 id = gr.Textbox()
 img_list = gr.JSON()
+annotation_info = {"keyskeys" : "kiss~~"}
 drive_data = gr.Radio(["drive dataset", "others"])
 my_theme = gr.Theme.from_hub("nuttea/Softblue")
 with gr.Blocks(
@@ -232,6 +226,7 @@ with gr.Blocks(
         ],
     )
     finish_btn_e.click(finish, inputs=id)
+    save_btn_e.click(save_annotation)
     ################################################
 
     segm_img_e.select(get_points, inputs=[segm_img_e], outputs=[coord_value])
