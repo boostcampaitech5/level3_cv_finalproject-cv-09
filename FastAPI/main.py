@@ -97,12 +97,16 @@ async def segment_everything(
 
 @torch.no_grad()
 async def segment_dino(box_threshold = 0.7, text_threshold = 0.7, image_path = "", text_prompt = "sky"):
+    print("text : ", text_prompt)
     image_pil = load_image(image_path)  # width x height
     masks, boxes, phrases, logits = app.state.lang_sam.predict(image_pil, text_prompt, box_threshold, text_threshold)   # channel x height x width
+    for idx, phrase in enumerate(phrases):
+        phrases[idx] = phrase.replace(" ", "_")
     labels = [f"{phrase} {logit:.2f}" for phrase, logit in zip(phrases, logits)]
     mask_dict = dict()
     for idx, label in enumerate(labels):
         label, logit = label.split()
+        print(label, logit)
         print(masks[idx].shape)
         if label in mask_dict:
             mask1 = np.array(mask_dict[label])
@@ -168,13 +172,12 @@ async def segment(path: str = Form(...)):
 
 
 @app.post("/segment_text/")
-async def segment_text(path: str = Form(...), text_prompt: str = Form(...)):
-    box_threshold, text_threshold = 0.3, 0.3
+async def segment_text(path: str = Form(...), text_prompt: str = Form(...), threshold: float = Form(...)):
     path = change_path(path)
     id, file_name = path.split("/")
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
     text_prompt = text_prompt.replace(",", ".")
-    text_seg_dict, segmented_image = await segment_dino(box_threshold, text_threshold, img_path, text_prompt = text_prompt)
+    text_seg_dict, segmented_image = await segment_dino(threshold, threshold, img_path, text_prompt = text_prompt)
     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
         os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
     segmented_image.save(f"{FOLDER_DIR}/{id}/segment/dino_{file_name}")
