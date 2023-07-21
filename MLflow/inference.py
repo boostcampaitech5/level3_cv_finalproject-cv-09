@@ -56,7 +56,7 @@ def test(model, image):
         #    outputs[:,i] = (outputs[:,i]> 0.5)
         outputs = outputs.argmax(dim=1)
         outputs = outputs.detach().cpu().numpy()
-        
+        # print(outputs)
             
     return outputs
 
@@ -85,27 +85,29 @@ def process_image_and_get_masks(img):
     convert_tensor = transforms.Compose([ToTensor(),Normalize((0.286,0.325,0.283),(0.186,0.190,0.187))])
     image = convert_tensor(img)
     image = image.unsqueeze(0)
-    print(image.shape)
 
     # Initialize the lighiting model
     model = PLModel(args=args)
 
     # Get masks using the 'test' function
     masks = test(model, image)
-
     return masks
 
-def mask_color(mask,cmap):
+def mask_color(mask,tuple):
+    cmap = tuple.cmap
+    label = tuple.label
     if isinstance(mask,np.ndarray):
+        mask_list = []
         r_mask = np.zeros_like(mask,dtype=np.uint8)
         g_mask = np.zeros_like(mask,dtype=np.uint8)
         b_mask = np.zeros_like(mask,dtype=np.uint8)
         for k in range(len(cmap)):
             indice = mask==k
+            mask_list.append([label[k], indice])
             r_mask[indice] = cmap[k][0]
             g_mask[indice] = cmap[k][1]
             b_mask[indice] = cmap[k][2]
-        return np.stack([b_mask, g_mask, r_mask], axis=2)
+        return np.stack([b_mask, g_mask, r_mask], axis=2), mask_list
 
 
 if __name__=="__main__":
@@ -119,6 +121,9 @@ if __name__=="__main__":
     out = np.squeeze(mask,axis=0)
     print(out.shape,out.dtype)
 
-    out = mask_color(out,CustomCityscapesSegmentation.cmap)
-
+    out, mask_list = mask_color(out,CustomCityscapesSegmentation)
     cv2.imwrite('./result1.jpg', out)
+    for element in mask_list:
+        print(element[0])
+        print(element[1])
+        print()
