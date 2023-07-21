@@ -76,6 +76,14 @@ def segment(id, img_path):
     return Image.open(io.BytesIO(seg.content))
 
 
+def hrnet_request(id, img_path):
+    data = {"path": os.path.join(str(id), str(img_path))}
+    res = requests.post("http://118.67.142.203:30008/segment_hrnet/", data=data)
+    # Please check if next code works
+    hrnet_img, hrnet_json = res.content
+    return Image.open(io.BytesIO(hrnet_img))
+    
+
 # 현석이가 만들어 줄 것.
 def segment_text(id, img_path, text_prompt, threshold):
     start_time = time.time_ns() // 1_000_000
