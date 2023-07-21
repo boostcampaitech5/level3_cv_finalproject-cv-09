@@ -43,7 +43,7 @@ async def startup_event():
 
 def change_path(path):
     if path.endswith('.png'):
-        path = str(path.split('.')[0] + '.jpg')
+        path = str(path.split('.')[0] + '.jpg')
     return path
         
 
@@ -129,6 +129,7 @@ async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
     path_list.append(f"{FOLDER_DIR}/{id}/original")
     path_list.append(f"{FOLDER_DIR}/{id}/segment")
     path_list.append(f"{FOLDER_DIR}/{id}/zip")
+    # path_list.append(f"{FOLDER_DIR}/{id}/hrnet")
 
     for path in path_list:
         if not os.path.isdir(path):
@@ -188,7 +189,28 @@ async def segment_text(path: str = Form(...), text_prompt: str = Form(...), thre
     # )
     output_reponse = JSONResponse(content=text_seg_dict)
     return output_reponse
-    
+
+# FE -> FastAPI : zip_upload
+# FastAPI -> MLflow : scp? api?
+# ML flow : inference
+# ML flow -> FastAPI : hrnet
+# FastAPI -> FE : segment_hrnet
+
+# Send data from FastAPI server to FE server
+# @app.post("/segment_hrnet/")
+# def segment_hrnet(path: str = Form(...)):
+#     path = change_path(path)
+#     id, file_name = path.split("/")
+#     pass
+
+# Send data from MLFlow server to FastAPI server
+@app.post("/hrnet/")
+def hrnet(mask: str = Form(...), files: UploadFile = File(...)):
+    path = f"{FOLDER_DIR}/hrnet"
+    content = files.read()
+    with open(path, "wb") as f:
+        f.write(content)
+    print(mask)
 
 @app.post("/json_download/")
 def json_download(path: str = Form(...)):
@@ -196,7 +218,7 @@ def json_download(path: str = Form(...)):
     path = change_path(path)
     file_name = file_name.split(".")[0]
     output = {"test": [1, 2, 3, 4], "test2": [5, 6, 7, 8]}
-    with open(f"{FOLDER_DIR}/{id}/{file_name}_segment.json", "w") as f:
+    with open(f"{FOLDER_DIR}/{id}/{file_name}.json", "w") as f:
         json.dump(output, f, indent=2)
     return output
 
@@ -205,7 +227,7 @@ def json_download(path: str = Form(...)):
 def remove(id: str = Form(...)):
     if id == "":
         return 0
-    zip_file = ZipFile(f"{FOLDER_DIR}/{id}/zip.zip", 'w')
+    zip_file = ZipFile(f"{FOLDER_DIR}/{id}/{id}.zip", 'w')
     for file in os.listdir(f"{FOLDER_DIR}/{id}/original"):
         zip_file.write(os.path.join(f"{FOLDER_DIR}/{id}/original", file))
     zip_file.close()
