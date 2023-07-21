@@ -6,8 +6,10 @@ import tqdm
 import argparse
 import torch
 from models.light import PLModel
-from dataset import CustomCityscapesSegmentation
 import torch.nn.functional as F
+import cv2
+from dataset import CustomCityscapesSegmentation
+from torchvision.transforms import ToTensor, Normalize
 
 # def encode_mask_to_rle(mask):
 #     '''
@@ -50,8 +52,9 @@ def test(model, image):
         # restore original size
         outputs = torch.sigmoid(outputs)
         # outputs = (outputs > 0.1).detach().cpu().numpy()
-        for i in range(n_class):
-            outputs[:,i] = (outputs[:,i]> 0.5)
+        #for i in range(n_class):
+        #    outputs[:,i] = (outputs[:,i]> 0.5)
+        outputs = outputs.argmax(dim=1)
         outputs = outputs.detach().cpu().numpy()
         
             
@@ -79,9 +82,10 @@ def process_image_and_get_masks(img):
     args = get_arg()
 
     # Load and preprocess the image
-    convert_tensor = transforms.ToTensor()
+    convert_tensor = transforms.Compose([ToTensor(),Normalize((0.286,0.325,0.283),(0.186,0.190,0.187))])
     image = convert_tensor(img)
     image = image.unsqueeze(0)
+    print(image.shape)
 
     # Initialize the lighiting model
     model = PLModel(args=args)
@@ -91,12 +95,30 @@ def process_image_and_get_masks(img):
 
     return masks
 
+def mask_color(mask,cmap):
+    if isinstance(mask,np.ndarray):
+        r_mask = np.zeros_like(mask,dtype=np.uint8)
+        g_mask = np.zeros_like(mask,dtype=np.uint8)
+        b_mask = np.zeros_like(mask,dtype=np.uint8)
+        for k in range(len(cmap)):
+            indice = mask==k
+            r_mask[indice] = cmap[k][0]
+            g_mask[indice] = cmap[k][1]
+            b_mask[indice] = cmap[k][2]
+        return np.stack([b_mask, g_mask, r_mask], axis=2)
 
 
 if __name__=="__main__":
-    img = Image.open("/opt/ml/level3_cv_finalproject-cv-09/MLflow/도시.png")
+    img = Image.open("/opt/ml/level3_cv_finalproject-cv-09/MLflow/test.jpg")
 
     mask = process_image_and_get_masks(img)
 
     print(mask.shape)
-    
+
+    # 이미지 저장
+    out = np.squeeze(mask,axis=0)
+    print(out.shape,out.dtype)
+
+    out = mask_color(out,CustomCityscapesSegmentation.cmap)
+
+    cv2.imwrite('./result1.jpg', out)
