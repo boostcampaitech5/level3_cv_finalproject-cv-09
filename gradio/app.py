@@ -251,13 +251,13 @@ with gr.Blocks(
             gdSAM_img_e,  # gdSAM얘는 [(building_image, "buildings")] 이런식으로 들어가야함.
         ],
     )
-    # add_btn_e.click(
-    #     fn=lambda coord, segm, dropdown, gdsam: gr.update(
-    #         value=(get_mask(coord, segm, dropdown, gdsam))
-    #     ),
-    #     inputs=[coord, segm_img_e, dropdown, gdSAM_img_e],
-    #     outputs=gdSAM_img_e,
-    # )
+    add_btn_e.click(
+        fn=lambda coord, segm, dropdown, gdsam: gr.update(
+            value=(get_mask(coord, segm, dropdown, gdsam))
+        ),
+        inputs=[coord, segm_img_e, dropdown, gdSAM_img_e],
+        outputs=gdSAM_img_e,
+    )
     finish_btn_e.click(finish, inputs=id)
     ################################################
 
