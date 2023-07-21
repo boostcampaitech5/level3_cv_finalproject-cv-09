@@ -117,18 +117,35 @@ css = "h1 { text-align: center } .about { text-align: justify; padding-left: 10%
 
 
 def get_points(image, evt: gr.SelectData):
+    w, h = image.size
     x, y = evt.index[0], evt.index[1]
-    pixels = image.load()
-    return x, y, pixels[x, y]
+    return x, y, w, h
 
 
-cond_img_e = gr.Image(label="Input", type="pil")
+def get_mask(x, y, w, h, sam_image, dropdown, gdsam):
+    pixels = np.array(sam_image)
+    prev_x, prev_y, _ = pixels.shape
+    ratio = x / w
+    x = int(prev_x * ratio)
+    y = int(prev_y * ratio)
+    mask = np.all(pixels == pixels[x, y], axis=-1)
+    mask = np.resize(mask, (w, h))
+
+    return mask
+
+
+# def add_label(label, image, sam_image, evt: gr.SelectData): # label int 여야함 .
+#     mask = get_points(image, sam_image, evt)
+
+cond_img_e = gr.Image(label="Input", interactive=False, type="pil")
 segm_img_e = gr.Image(label="Mobile SAM", interactive=False, type="pil")
-gdSAM_img_e = gr.AnnotatedImage(label="GDSAM", interactive=False)
+gdSAM_img_e = gr.AnnotatedImage(label="GDSAM", interactive=True, visible=False)
+HRNet_img_e = gr.AnnotatedImage(label="HRNet", interactive=False)
 
+temp = [HRNet_img_e, gdSAM_img_e]
 id = gr.Textbox()
 img_list = gr.JSON()
-drive_data = gr.Radio(["drive dataset", "others"])
+data_type = gr.Radio(["drive dataset", "others"], value="drive dataset")
 my_theme = gr.Theme.from_hub("nuttea/Softblue")
 with gr.Blocks(
     css=css, title="Faster Segment Anything(MobileSAM)", theme=my_theme
@@ -139,7 +156,7 @@ with gr.Blocks(
     with gr.Tab("file upload Tab"):
         gr.Interface(
             zip_upload,
-            inputs=[drive_data, "file", id],
+            inputs=[data_type, "file", id],
             outputs=img_list,
             allow_flagging="never",
         )
@@ -159,10 +176,15 @@ with gr.Blocks(
                 with gr.Tab("Original Image"):
                     cond_img_e.render()
             with gr.Column():
+                with gr.Tab("HRNet Output"):
+                    HRNet_img_e.render()
                 with gr.Tab("Grounding Dino"):
                     gdSAM_img_e.render()
                 with gr.Tab("Segment Everything"):
                     segm_img_e.render()
+            # with gr.Tab("mask"):
+            #    mask_img_e.render()
+
         with gr.Row(variant="panel"):
             label_checkbox = gr.CheckboxGroup(
                 choices=[],
@@ -171,6 +193,8 @@ with gr.Blocks(
             )
 
         with gr.Row():
+            with gr.Column():
+                dropdown = gr.Dropdown(interactive=True)
             with gr.Column():
                 add_btn_e = gr.Button("add", variant="secondary")
             with gr.Column():
@@ -188,8 +212,17 @@ with gr.Blocks(
                 finish_btn_e = gr.Button("Finish")
             with gr.Column():
                 save_btn_e = gr.Button("Save")
+                coord = gr.JSON()
 
     ################ 1 page buttons ################
+    data_type.change(
+        fn=lambda value: (
+            gr.update(visible=(value == "drive dataset")),
+            gr.update(visible=(value != "drive dataset")),
+        ),
+        inputs=data_type,
+        outputs=[HRNet_img_e, gdSAM_img_e],
+    )
     set_label_btn_e.click(
         fn=lambda value: label_checkbox.update(
             choices=value.replace(", ", ",").split(",")
@@ -197,6 +230,9 @@ with gr.Blocks(
         inputs=label_list,
         outputs=label_checkbox,
     )
+    # label_checkbox.change(
+    #     fn=lambda value: gr.update(value=value), inputs=label_checkbox, outputs=dropdown
+    # )
     start_btn_e.click(
         fn=start_annotation,
         inputs=img_list,
@@ -215,10 +251,17 @@ with gr.Blocks(
             gdSAM_img_e,  # gdSAM얘는 [(building_image, "buildings")] 이런식으로 들어가야함.
         ],
     )
+    # add_btn_e.click(
+    #     fn=lambda coord, segm, dropdown, gdsam: gr.update(
+    #         value=(get_mask(coord, segm, dropdown, gdsam))
+    #     ),
+    #     inputs=[coord, segm_img_e, dropdown, gdSAM_img_e],
+    #     outputs=gdSAM_img_e,
+    # )
     finish_btn_e.click(finish, inputs=id)
     ################################################
 
-    segm_img_e.select(get_points, inputs=[segm_img_e], outputs=[coord_value])
+    cond_img_e.select(get_points, inputs=cond_img_e, outputs=coord)
 
     present_img.change(
         fn=viz_img,

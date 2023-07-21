@@ -26,7 +26,6 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 @app.on_event("startup")
 async def startup_event():
-
     # Load the pre-trained model
     sam_checkpoint = "weights/mobile_sam.pt"
     model_type = "vit_t"
@@ -37,15 +36,16 @@ async def startup_event():
 
     app.state.mask_generator = SamAutomaticMaskGenerator(mobile_sam)
     app.state.predictor = SamPredictor(mobile_sam)
-    
+
     # Lang-SAM load
-    app.state.lang_sam = LangSAM(sam_type="vit_h", device = device)
+    app.state.lang_sam = LangSAM(sam_type="vit_h", device=device)
+
 
 def change_path(path):
-    if path.endswith('.png'):
-        path = str(path.split('.')[0] + '.jpg')
+    if path.endswith(".png"):
+        path = str(path.split(".")[0] + ".jpg")
     return path
-        
+
 
 def rle_encode(mask):
     """
@@ -58,7 +58,7 @@ def rle_encode(mask):
     mask_flatten = np.concatenate([[0], mask_flatten, [0]])
     runs = np.where(mask_flatten[1:] != mask_flatten[:-1])[0] + 1
     runs[1::2] -= runs[::2]
-    rle = ' '.join(str(x) for x in runs)
+    rle = " ".join(str(x) for x in runs)
     return rle
 
 
@@ -96,9 +96,13 @@ async def segment_everything(
 
 
 @torch.no_grad()
-async def segment_dino(box_threshold = 0.7, text_threshold = 0.7, image_path = "", text_prompt = "sky"):
+async def segment_dino(
+    box_threshold=0.7, text_threshold=0.7, image_path="", text_prompt="sky"
+):
     image_pil = load_image(image_path)  # width x height
-    masks, boxes, phrases, logits = app.state.lang_sam.predict(image_pil, text_prompt, box_threshold, text_threshold)   # channel x height x width
+    masks, boxes, phrases, logits = app.state.lang_sam.predict(
+        image_pil, text_prompt, box_threshold, text_threshold
+    )  # channel x height x width
     labels = [f"{phrase} {logit:.2f}" for phrase, logit in zip(phrases, logits)]
     mask_dict = dict()
     for idx, label in enumerate(labels):
@@ -118,6 +122,7 @@ async def segment_dino(box_threshold = 0.7, text_threshold = 0.7, image_path = "
     image = draw_image(image_array, masks, boxes, labels)
     image = Image.fromarray(np.uint8(image)).convert("RGB")
     return mask_dict, image
+
 
 @app.post("/zip_upload/")
 async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
@@ -140,13 +145,12 @@ async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
     ZipFile(f"{ZIP_PATH}/{file_name}.zip").extractall(f"data/{id}/original")
     # Convert PNG to JPG
     for file in os.listdir(f"{FOLDER_DIR}/{id}/original/"):
-        if file.endswith('.png'):
+        if file.endswith(".png"):
             path = f"{FOLDER_DIR}/{id}/original/{file.split('.')[0]}"
             jpg_path = f"{path}.jpg"
             img = Image.open(f"{path}.png").convert("RGB")
             img.save(jpg_path)
             os.remove(f"{path}.png")
-    
 
 
 @app.post("/segment/")
@@ -174,7 +178,9 @@ async def segment_text(path: str = Form(...), text_prompt: str = Form(...)):
     id, file_name = path.split("/")
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
     text_prompt = text_prompt.replace(",", ".")
-    text_seg_dict, segmented_image = await segment_dino(box_threshold, text_threshold, img_path, text_prompt = text_prompt)
+    text_seg_dict, segmented_image = await segment_dino(
+        box_threshold, text_threshold, img_path, text_prompt=text_prompt
+    )
     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
         os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
     segmented_image.save(f"{FOLDER_DIR}/{id}/segment/dino_{file_name}")
@@ -185,7 +191,7 @@ async def segment_text(path: str = Form(...), text_prompt: str = Form(...)):
     # )
     output_reponse = JSONResponse(content=text_seg_dict)
     return output_reponse
-    
+
 
 @app.post("/json_download/")
 def json_download(path: str = Form(...)):
@@ -202,14 +208,14 @@ def json_download(path: str = Form(...)):
 def remove(id: str = Form(...)):
     if id == "":
         return 0
-    zip_file = ZipFile(f"{FOLDER_DIR}/{id}/zip.zip", 'w')
+    zip_file = ZipFile(f"{FOLDER_DIR}/{id}/zip.zip", "w")
     for file in os.listdir(f"{FOLDER_DIR}/{id}/original"):
         zip_file.write(os.path.join(f"{FOLDER_DIR}/{id}/original", file))
     zip_file.close()
-    '''
+    """
     <TO BE IMPLEMENTED>
     Send zipfile to airflow server using scp command
-    '''
+    """
     path_list = []
     path_list.append(f"{FOLDER_DIR}/{id}/original")
     path_list.append(f"{FOLDER_DIR}/{id}/segment")
