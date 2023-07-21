@@ -107,6 +107,7 @@ async def segment_dino(
     mask_dict = dict()
     for idx, label in enumerate(labels):
         label, logit = label.split()
+        print(label, logit)
         print(masks[idx].shape)
         if label in mask_dict:
             mask1 = np.array(mask_dict[label])
@@ -172,8 +173,9 @@ async def segment(path: str = Form(...)):
 
 
 @app.post("/segment_text/")
-async def segment_text(path: str = Form(...), text_prompt: str = Form(...)):
-    box_threshold, text_threshold = 0.3, 0.3
+async def segment_text(
+    path: str = Form(...), text_prompt: str = Form(...), threshold: float = Form(...)
+):
     path = change_path(path)
     id, file_name = path.split("/")
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"

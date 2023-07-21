@@ -13,9 +13,10 @@ gradio/images
 logs
 .empty
 *.jpg
+*.jpeg
 *.png
 *.zip
 data/
 mlruns/
 FastAPI/data
-
+checkpoint/

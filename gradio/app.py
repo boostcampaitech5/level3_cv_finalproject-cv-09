@@ -66,12 +66,16 @@ def segment(id, img_path):
 
 
 # 현석이가 만들어 줄 것.
-def segment_text(id, img_path, text_prompt):
+def segment_text(id, img_path, text_prompt, threshold):
     start_time = time.time_ns() // 1_000_000
     string_prompt = " . ".join(text_prompt)
     img_prefix = f"data/{id}"
     image_pil = Image.open(os.path.join(img_prefix, img_path)).convert("RGB")
-    data = {"path": os.path.join(str(id), str(img_path)), "text_prompt": string_prompt}
+    data = {
+        "path": os.path.join(str(id), str(img_path)),
+        "text_prompt": string_prompt,
+        "threshold": threshold,
+    }
     seg = requests.post("http://118.67.142.203:30008/segment_text/", data=data)
     # print(type(seg))
     # print(type(json.loads(seg)))
@@ -86,15 +90,15 @@ def segment_text(id, img_path, text_prompt):
     # /image_array = np.asarray(image_pil)
     # image = draw_image(image_array, masks)
     # image = Image.fromarray(np.uint8(image)).convert("RGB")
-    # end_time = time.time_ns() // 1_000_000
-    # with open("no_rle.txt", "a") as f:
-    #    f.write(f"{(end_time - start_time)}\n")
+    end_time = time.time_ns() // 1_000_000
+    with open("no_rle.txt", "a") as f:
+        f.write(f"{(end_time - start_time)}\n")
     return image_pil, temp
 
 
-def segment_request(id, img_path, text_prompt):
+def segment_request(id, threshold, img_path, text_prompt):
     return segment(id, img_path), segment_text(
-        id, img_path, text_prompt
+        id, img_path, text_prompt, threshold
     )  # 얘 output이 [(building_image1, "buildings1"), (building_image2, "buildings2")] 이런식으로 나와야함
 
 
@@ -182,9 +186,16 @@ with gr.Blocks(
                     gdSAM_img_e.render()
                 with gr.Tab("Segment Everything"):
                     segm_img_e.render()
-            # with gr.Tab("mask"):
-            #    mask_img_e.render()
-
+        with gr.Row():
+            threshold = gr.Slider(
+                0.01,
+                1,
+                value=0.3,
+                step=0.01,
+                label="Threshold",
+                interactive=True,
+                info="Choose between 0.01 and 1",
+            )
         with gr.Row(variant="panel"):
             label_checkbox = gr.CheckboxGroup(
                 choices=[],
@@ -245,7 +256,7 @@ with gr.Blocks(
     next_btn_e.click(next_img, outputs=present_img)
     request_btn_e.click(
         segment_request,
-        inputs=[id, present_img, label_checkbox],
+        inputs=[id, threshold, present_img, label_checkbox],
         outputs=[
             segm_img_e,
             gdSAM_img_e,  # gdSAM얘는 [(building_image, "buildings")] 이런식으로 들어가야함.

@@ -171,78 +171,76 @@ class ObjectAttentionBlock2D(_ObjectAttentionBlock):
                                                      use_bg,
                                                      fetch_attention,
                                                      bn_type=bn_type)
-        
-            
-class SpatialOCR_Context(nn.Module):
+
+
+class SpatialOCR_Module(nn.Module):
     """
-    Implementation of the FastOC module:
+    Implementation of the OCR module:
     We aggregate the global object representation to update the representation for each pixel.
+
+    use_gt=True: whether use the ground-truth label to compute the ideal object contextual representations.
+    use_bg=True: use the ground-truth label to compute the ideal background context to augment the representations.
+    use_oc=True: use object context or not.
     """
-    def __init__(self, in_channels, key_channels, scale=1, dropout=0, bn_type=None,):
-        super(SpatialOCR_Context, self).__init__()
+    def __init__(self, 
+                 in_channels, 
+                 key_channels, 
+                 out_channels, 
+                 scale=1, 
+                 dropout=0.1, 
+                 use_gt=False,
+                 use_bg=False,
+                 use_oc=True,
+                 fetch_attention=False, 
+                 bn_type=None):
+        super(SpatialOCR_Module, self).__init__()
+        self.use_gt = use_gt
+        self.use_bg = use_bg
+        self.use_oc = use_oc
+        self.fetch_attention = fetch_attention
         self.object_context_block = ObjectAttentionBlock2D(in_channels, 
                                                            key_channels, 
                                                            scale, 
-                                                           bn_type=bn_type)
-        
-    def forward(self, feats, proxy_feats):
-        context = self.object_context_block(feats, proxy_feats)
-        return context
-    
-            
-class SpatialOCR_ASP_Module(nn.Module):
-    def __init__(self, features, hidden_features=256, out_features=512, dilations=(12, 24, 36), num_classes=19, bn_type=None, dropout=0.1):
-        super(SpatialOCR_ASP_Module, self).__init__()
-        self.context = nn.Sequential(nn.Conv2d(features, hidden_features, kernel_size=3, padding=1, dilation=1, bias=True),
-                                     ModuleHelper.BNReLU(hidden_features, bn_type=bn_type),
-                                     SpatialOCR_Context(in_channels=hidden_features,
-                                                        key_channels=hidden_features//2, scale=1, bn_type=bn_type),
-                                    )
-        self.conv2 = nn.Sequential(nn.Conv2d(features, hidden_features, kernel_size=1, padding=0, dilation=1, bias=True),
-                                   ModuleHelper.BNReLU(hidden_features, bn_type=bn_type),)
-        self.conv3 = nn.Sequential(nn.Conv2d(features, hidden_features, kernel_size=3, padding=dilations[0], dilation=dilations[0], bias=True),
-                                   ModuleHelper.BNReLU(hidden_features, bn_type=bn_type),)
-        self.conv4 = nn.Sequential(nn.Conv2d(features, hidden_features, kernel_size=3, padding=dilations[1], dilation=dilations[1], bias=True),
-                                   ModuleHelper.BNReLU(hidden_features, bn_type=bn_type),)
-        self.conv5 = nn.Sequential(nn.Conv2d(features, hidden_features, kernel_size=3, padding=dilations[2], dilation=dilations[2], bias=True),
-                                   ModuleHelper.BNReLU(hidden_features, bn_type=bn_type),)
+                                                           use_gt,
+                                                           use_bg,
+                                                           fetch_attention,
+                                                           bn_type)
+        if self.use_bg:
+            if self.use_oc:
+                _in_channels = 3 * in_channels
+            else:
+                _in_channels = 2 * in_channels
+        else:
+            _in_channels = 2 * in_channels
+
         self.conv_bn_dropout = nn.Sequential(
-            nn.Conv2d(hidden_features * 5, out_features, kernel_size=1, padding=0, dilation=1, bias=True),
-            ModuleHelper.BNReLU(out_features, bn_type=bn_type),
+            nn.Conv2d(_in_channels, out_channels, kernel_size=1, padding=0),
+            ModuleHelper.BNReLU(out_channels, bn_type=bn_type),
             nn.Dropout2d(dropout)
-            )
-        self.object_head = SpatialGather_Module(num_classes)
+        )
 
-    def _cat_each(self, feat1, feat2, feat3, feat4, feat5):
-        assert(len(feat1)==len(feat2))
-        z = []
-        for i in range(len(feat1)):
-            z.append(torch.cat((feat1[i], feat2[i], feat3[i], feat4[i], feat5[i]), 1))
-        return z
-
-    def forward(self, x, probs):
-        if isinstance(x, Variable):
-            _, _, h, w = x.size()
-        elif isinstance(x, tuple) or isinstance(x, list):
-            _, _, h, w = x[0].size()
+    def forward(self, feats, proxy_feats, gt_label=None):
+        if self.use_gt and gt_label is not None:
+            if self.use_bg:
+                context, bg_context = self.object_context_block(feats, proxy_feats, gt_label)
+            else:
+                context = self.object_context_block(feats, proxy_feats, gt_label)
         else:
-            raise RuntimeError('unknown input type')
+            if self.fetch_attention:
+                context, sim_map = self.object_context_block(feats, proxy_feats)
+            else:
+                context = self.object_context_block(feats, proxy_feats)
 
-        feat1 = self.context[0](x)
-        feat1 = self.context[1](feat1)
-        proxy_feats = self.object_head(feat1, probs)
-        feat1 = self.context[2](feat1, proxy_feats)
-        feat2 = self.conv2(x)
-        feat3 = self.conv3(x)
-        feat4 = self.conv4(x)
-        feat5 = self.conv5(x)
-
-        if isinstance(x, Variable):
-            out = torch.cat((feat1, feat2, feat3, feat4, feat5), 1)
-        elif isinstance(x, tuple) or isinstance(x, list):
-            out = self._cat_each(feat1, feat2, feat3, feat4, feat5)
+        if self.use_bg:
+            if self.use_oc:
+                output = self.conv_bn_dropout(torch.cat([context, bg_context, feats], 1))
+            else:
+                output = self.conv_bn_dropout(torch.cat([bg_context, feats], 1))
         else:
-            raise RuntimeError('unknown input type')
+            output = self.conv_bn_dropout(torch.cat([context, feats], 1))
 
-        output = self.conv_bn_dropout(out)
-        return output
+        if self.fetch_attention:
+            return output, sim_map
+        else:
+            return output
+            
