@@ -3,6 +3,7 @@ import numpy as np
 from torchvision import datasets, transforms
 from PIL import Image
 import tqdm
+from io import BytesIO
 import argparse
 import torch
 from models.light import PLModel
@@ -10,7 +11,6 @@ import torch.nn.functional as F
 import cv2
 from dataset import CustomCityscapesSegmentation
 from torchvision.transforms import ToTensor, Normalize
-import requests
 
 # def encode_mask_to_rle(mask):
 #     '''
@@ -125,8 +125,3 @@ if __name__=="__main__":
     out, mask_list = mask_color(out,CustomCityscapesSegmentation)
     output_path = './result.jpg'
     cv2.imwrite(output_path, out)
-    
-    # Post Request
-    files = {"files": Image.open(output_path)}
-    data = {"mask": mask_list}
-    res = requests.post("http://118.67.142.203:30008/hrnet/", data=data, files=files)
