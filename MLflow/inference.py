@@ -126,6 +126,7 @@ if __name__=="__main__":
     output_path = './result.jpg'
     cv2.imwrite(output_path, out)
     
+    # Post Request
     files = {"files": Image.open(output_path)}
     data = {"mask": mask_list}
     res = requests.post("http://118.67.142.203:30008/hrnet/", data=data, files=files)

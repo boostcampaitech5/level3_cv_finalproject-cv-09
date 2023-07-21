@@ -212,6 +212,7 @@ def hrnet(mask: str = Form(...), files: UploadFile = File(...)):
         f.write(content)
     print(mask)
 
+
 @app.post("/json_download/")
 def json_download(path: str = Form(...)):
     id, file_name = path.split("/")
