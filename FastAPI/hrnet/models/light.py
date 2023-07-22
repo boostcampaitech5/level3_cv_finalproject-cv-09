@@ -4,15 +4,15 @@ import torchmetrics
 import torch
 import torch.nn as nn
 
+
 class PLModel(pl.LightningModule):
     def __init__(self,args):
         super().__init__()
         self.net = HRNet_W48_OCR(args)
         self.args = args
-        # self.train_score = torchmetrics.Dice(multiclass=True,num_classes=args.num_classes)
-        self.train_score = torchmetrics.JaccardIndex(task='multiclass',num_classes=args.num_classes)
-        self.val_score = torchmetrics.JaccardIndex(task='multiclass',num_classes=args.num_classes,average='none')
-        self.test_score = torchmetrics.JaccardIndex(task='multiclass',num_classes=args.num_classes,average='none')
+        self.train_score = torchmetrics.Dice(multiclass=True,num_classes=args.num_classes)
+        self.val_score = torchmetrics.Dice(multiclass=True,num_classes=args.num_classes)
+        self.best_score = 0
         
         self.training_step_outputs = []
         self.validation_step_outputs = []
@@ -27,7 +27,7 @@ class PLModel(pl.LightningModule):
     def forward(self,x):
         return self.net(x)
 
-    # train , on_epoch는 epoch 마다 on_step은 step 마다
+    # on_epoch는 epoch 마다 on_step은 step 마다
     def training_step(self, batch, batch_idx):
         x, y = batch
         y = y.squeeze(1).type(dtype=torch.long)
@@ -35,59 +35,50 @@ class PLModel(pl.LightningModule):
         loss = nn.functional.cross_entropy(logits,y)
         pred = logits.argmax(dim=1)
         
-        self.train_score(pred.detach(),y.detach())
-        self.training_step_outputs.append(loss.detach().cpu())
-        
+        self.train_score(pred,y)
+        self.training_step_outputs.append(loss)
+        # self.log("train_loss",loss,on_epoch=True,on_step=False)
+        # self.log("train_score",self.train_score,on_epoch=True,on_step=False)
         return loss
-        
+    
     def on_train_epoch_end(self) -> None:
         all_outs = torch.stack(self.training_step_outputs)
         score = self.train_score.compute()
         
-        self.log("train_loss",all_outs.mean())
-        self.log("train_score",score.mean())
+        self.log("train_loss",all_outs.mean().item())
+        self.log("train_score",score.detach().cpu())
         self.training_step_outputs.clear()
         self.train_score.reset()
         
-    # validation
+    
     def validation_step(self,batch, batch_idx):
         x, y = batch
         y = y.squeeze(1).type(torch.long)
         logits = self.forward(x)
+        print(type(logits), type(y))
         loss = nn.functional.cross_entropy(logits,y)
         pred = logits.argmax(dim=1)
         
-        self.val_score(pred.detach(),y.detach())
-        self.validation_step_outputs.append(loss.detach().cpu())
+        self.val_score(pred,y)
+        self.validation_step_outputs.append(loss)
+        # self.log("val_loss",loss,on_epoch=True,on_step=False)
+        # self.log("val_score",self.val_score,on_epoch=True,on_step=False)
         
         return loss
     
+        
     def on_validation_epoch_end(self) -> None:
         all_outs = torch.stack(self.validation_step_outputs)
         score = self.val_score.compute()
+        self.best_score = max(self.best_score,score)
         
-        self.log("val_loss",all_outs.mean())
-        self.log("val_score",score.mean())
-        self.log_dict({f"class{key}":value.item() for key,value in enumerate(score)})
+        self.log("val_loss",all_outs.mean().item())
+        self.log("val_score",score.detach().cpu())
+        self.log("best_score",self.best_score)
         
         self.validation_step_outputs.clear()
         self.val_score.reset()
         
-    # test
-    def test_step(self,batch, batch_idx):
-        x, y = batch
-        y = y.squeeze(1).type(torch.long)
-        logits = self.forward(x)
-        pred = logits.argmax(dim=1)
-        
-        self.test_score(pred.detach(),y.detach())
-        
-    def on_test_epoch_end(self) -> None:
-        score = self.test_score.compute()
-        
-        self.log("test_score",score.mean())
-        self.log_dict({f"test class{key}":value.item() for key,value in enumerate(score)})
-        self.test_score.reset()
-        
+
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(),lr=self.args.lr)

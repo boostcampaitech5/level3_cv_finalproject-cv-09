@@ -3,6 +3,7 @@ import numpy as np
 from torchvision import datasets, transforms
 from PIL import Image
 import tqdm
+from io import BytesIO
 import argparse
 import torch
 from models.light import PLModel
@@ -47,18 +48,21 @@ def test(model, image):
 
 
         image = image.cuda()    
-        outputs = model(image)
+        logits = model(image)
         
         # restore original size
-        outputs = torch.sigmoid(outputs)
+        outputs = torch.sigmoid(logits)
         # outputs = (outputs > 0.1).detach().cpu().numpy()
         #for i in range(n_class):
         #    outputs[:,i] = (outputs[:,i]> 0.5)
         outputs = outputs.argmax(dim=1)
         outputs = outputs.detach().cpu().numpy()
+        result = outputs == np.arange(logits.shape[1])[:, np.newaxis, np.newaxis]
         
+        # result = np.zeros_like(logits.detach().cpu().numpy(), dtype=bool)
+        # result[:,outputs,:,:] = True
             
-    return outputs
+    return outputs, result
 
 
 
@@ -85,40 +89,43 @@ def process_image_and_get_masks(img):
     convert_tensor = transforms.Compose([ToTensor(),Normalize((0.286,0.325,0.283),(0.186,0.190,0.187))])
     image = convert_tensor(img)
     image = image.unsqueeze(0)
-    print(image.shape)
 
     # Initialize the lighiting model
     model = PLModel(args=args)
 
     # Get masks using the 'test' function
     masks = test(model, image)
-
     return masks
 
-def mask_color(mask,cmap):
+def mask_color(mask,tuple):
+    cmap = tuple.cmap
+    label = tuple.label
     if isinstance(mask,np.ndarray):
+        mask_list = []
         r_mask = np.zeros_like(mask,dtype=np.uint8)
         g_mask = np.zeros_like(mask,dtype=np.uint8)
         b_mask = np.zeros_like(mask,dtype=np.uint8)
         for k in range(len(cmap)):
             indice = mask==k
+            mask_list.append([label[k], indice])
             r_mask[indice] = cmap[k][0]
             g_mask[indice] = cmap[k][1]
             b_mask[indice] = cmap[k][2]
-        return np.stack([b_mask, g_mask, r_mask], axis=2)
+        return np.stack([b_mask, g_mask, r_mask], axis=2), mask_list
 
 
 if __name__=="__main__":
     img = Image.open("/opt/ml/level3_cv_finalproject-cv-09/MLflow/test.jpg")
 
-    mask = process_image_and_get_masks(img)
+    mask,result = process_image_and_get_masks(img)
+    print(f"result shpae: {result.shape}, {result[12][540][1100]}")
 
-    print(mask.shape)
+    print(f"mask shape: {mask.shape}")
 
     # 이미지 저장
     out = np.squeeze(mask,axis=0)
     print(out.shape,out.dtype)
 
-    out = mask_color(out,CustomCityscapesSegmentation.cmap)
-
-    cv2.imwrite('./result1.jpg', out)
+    out, mask_list = mask_color(out,CustomCityscapesSegmentation)
+    output_path = './result.jpg'
+    cv2.imwrite(output_path, out)
