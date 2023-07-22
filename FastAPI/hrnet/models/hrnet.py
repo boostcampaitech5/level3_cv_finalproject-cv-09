@@ -1,9 +1,9 @@
 import os
 import torch.nn.functional as F
 import torch.nn as nn
-from models.modules import ModuleHelper, blocks_dict, Bottleneck
+from hrnet.models.modules import ModuleHelper, blocks_dict, Bottleneck
 import torch
-from models.asp import SpatialGather_Module, SpatialOCR_Module
+from hrnet.models.asp import SpatialGather_Module, SpatialOCR_Module
 
 
 class HighResolutionModule(nn.Module):

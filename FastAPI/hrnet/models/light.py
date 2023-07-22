@@ -1,4 +1,4 @@
-from models.hrnet import HRNet_W48_OCR
+from hrnet.models.hrnet import HRNet_W48_OCR
 import pytorch_lightning as pl
 import torchmetrics
 import torch

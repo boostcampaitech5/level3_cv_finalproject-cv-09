@@ -152,7 +152,7 @@ def hrnet_inference(id, file_name):
 async def segment_everything(
     image,
     input_size=1024,
-    better_quality=True,
+    better_quality=False,
     use_retina=True,
     mask_random_color=True,
 ):
@@ -167,7 +167,10 @@ async def segment_everything(
 
     nd_image = np.array(image)
     annotations = app.state.mask_generator.generate(nd_image)
-
+    mask_dict = {"masks" : list(), "size": [new_h, new_w]}
+    for idx, annotation in enumerate(annotations):
+        rle_mask = rle_encode(annotation['segmentation'])
+        mask_dict['masks'].append(rle_mask)
     fig = fast_process(
         annotations=annotations,
         image=image,
@@ -178,7 +181,7 @@ async def segment_everything(
         bbox=None,
         use_retina=use_retina,
     )
-    return fig
+    return fig, mask_dict
 
 
 @torch.no_grad()
@@ -245,16 +248,17 @@ async def segment(path: str = Form(...)):
     id, file_name = path.split("/")
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
     img = Image.open(img_path).convert("RGB")
-    output = await segment_everything(img)
-    output = output.convert("RGB")
+    fig, mask_dict = await segment_everything(img)
+    output = fig.convert("RGB")
     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
         os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
     output.save(f"{FOLDER_DIR}/{id}/segment/{file_name}")
-    seg_img = FileResponse(
-        f"{FOLDER_DIR}/{id}/segment/{file_name}",
-        media_type="image/jpg",
-    )
-    return seg_img
+    # seg_img = FileResponse(
+    #     f"{FOLDER_DIR}/{id}/segment/{file_name}",
+    #     media_type="image/jpg",
+    # )
+    output_reponse = JSONResponse(content=mask_dict)
+    return output_reponse
 
 
 @app.post("/segment_text/")
@@ -307,7 +311,7 @@ def json_download(path: str = Form(...)):
 
 
 @app.post("/remove/")
-def remove(id: str = Form(...)):
+def remove(id: str = Form(...), annotated_data: dict = Form(...)):
     if id == "":
         return 0
     zip_file = ZipFile(f"{FOLDER_DIR}/{id}/{id}.zip", 'w')

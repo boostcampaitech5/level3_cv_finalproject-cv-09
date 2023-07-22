@@ -2,7 +2,7 @@ import torch
 from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.functional as F
-from models.modules import ModuleHelper
+from hrnet.models.modules import ModuleHelper
 
 
 def label_to_onehot(gt, num_classes, ignore_index=-1):

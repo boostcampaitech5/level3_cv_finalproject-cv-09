@@ -20,3 +20,5 @@ data/
 mlruns/
 FastAPI/data
 checkpoint/
+*/key
+key
