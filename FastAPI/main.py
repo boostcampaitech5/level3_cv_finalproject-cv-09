@@ -150,7 +150,7 @@ def hrnet_inference(id, file_name):
 async def segment_everything(
     image,
     input_size=1024,
-    better_quality=True,
+    better_quality=False,
     use_retina=True,
     mask_random_color=True,
 ):
@@ -165,7 +165,10 @@ async def segment_everything(
 
     nd_image = np.array(image)
     annotations = app.state.mask_generator.generate(nd_image)
-
+    mask_dict = {"masks" : list(), "size": [new_h, new_w]}
+    for idx, annotation in enumerate(annotations):
+        rle_mask = rle_encode(annotation['segmentation'])
+        mask_dict['masks'].append(rle_mask)
     fig = fast_process(
         annotations=annotations,
         image=image,
@@ -176,7 +179,7 @@ async def segment_everything(
         bbox=None,
         use_retina=use_retina,
     )
-    return fig
+    return fig, mask_dict
 
 
 @torch.no_grad()
@@ -188,10 +191,9 @@ async def segment_dino(box_threshold = 0.7, text_threshold = 0.7, image_path = "
         phrases[idx] = phrase.replace(" ", "_")
     labels = [f"{phrase} {logit:.2f}" for phrase, logit in zip(phrases, logits)]
     mask_dict = {"masks" : dict(), "size": [image_pil.height, image_pil.width]}
+    print(mask_dict['size'])
     for idx, label in enumerate(labels):
         label, logit = label.split()
-        print(label, logit)
-        print(masks[idx].shape)
         if label in mask_dict["masks"]:
             mask1 = np.array(mask_dict["masks"][label])
             mask2 = np.array(masks[idx])
@@ -202,8 +204,6 @@ async def segment_dino(box_threshold = 0.7, text_threshold = 0.7, image_path = "
     for label, mask in mask_dict["masks"].items():
         rle_mask = rle_encode(mask)
         mask_dict["masks"][label] = rle_mask
-        print(label, mask_dict["masks"][label])
-    print(mask_dict['size'])
     image_array = np.asarray(image_pil)
     image = draw_image(image_array, masks, boxes, labels)
     image = Image.fromarray(np.uint8(image)).convert("RGB")
@@ -246,16 +246,17 @@ async def segment(path: str = Form(...)):
     id, file_name = path.split("/")
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
     img = Image.open(img_path).convert("RGB")
-    output = await segment_everything(img)
-    output = output.convert("RGB")
+    fig, mask_dict = await segment_everything(img)
+    output = fig.convert("RGB")
     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
         os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
     output.save(f"{FOLDER_DIR}/{id}/segment/{file_name}")
-    seg_img = FileResponse(
-        f"{FOLDER_DIR}/{id}/segment/{file_name}",
-        media_type="image/jpg",
-    )
-    return seg_img
+    # seg_img = FileResponse(
+    #     f"{FOLDER_DIR}/{id}/segment/{file_name}",
+    #     media_type="image/jpg",
+    # )
+    output_reponse = JSONResponse(content=mask_dict)
+    return output_reponse
 
 
 @app.post("/segment_text/")
@@ -308,7 +309,7 @@ def json_download(path: str = Form(...)):
 
 
 @app.post("/remove/")
-def remove(id: str = Form(...)):
+def remove(id: str = Form(...), annotated_data: dict = Form(...)):
     if id == "":
         return 0
     zip_file = ZipFile(f"{FOLDER_DIR}/{id}/{id}.zip", 'w')

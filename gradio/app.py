@@ -12,6 +12,7 @@ import json
 import sys
 from torchvision.utils import draw_segmentation_masks
 import time
+import asyncio
 
 
 def draw_image(image, masks, alpha=0.4):
@@ -72,8 +73,15 @@ def viz_img(id, path):
 def segment(id, img_path):
     data = {"path": os.path.join(str(id), str(img_path))}
     seg = requests.post("http://118.67.142.203:30008/segment/", data=data)
-
-    return Image.open(io.BytesIO(seg.content))
+    mask_dict = json.loads(seg.content)
+    sam_masks = list()
+    for idx, mask in enumerate(mask_dict["masks"]):
+        seg_mask = rle_decode(mask, mask_dict['size'])
+        sam_masks.append(np.array(seg_mask))
+    print(np.array(sam_masks[0]).shape)
+    print(len(sam_masks))
+    return sam_masks
+    # return Image.open(io.BytesIO(seg.content))
 
 
 def hrnet_request(id, img_path):
@@ -83,34 +91,31 @@ def hrnet_request(id, img_path):
     hrnet_img, hrnet_json = res.content
     return Image.open(io.BytesIO(hrnet_img))
     
+async def make_annotation_json(img_path, data):
+    global annotation_info
+    annotation_dict = dict()
+    annotation_dict['image_path'] = img_path
+    annotation_dict['size'] = data['size']
+    annotation_dict['masks'] = list()
+    for label, mask in data['masks'].items():
+        mask_info = {"label" : label, "mask" : mask}
+        annotation_dict['masks'].append(mask_info)
+    annotation_info['annotation'].append(annotation_dict)
 
 # 현석이가 만들어 줄 것.
 def segment_text(id, img_path, text_prompt, threshold):
-    start_time = time.time_ns() // 1_000_000
+    global annotation_info
     string_prompt = " . ".join(text_prompt)
     img_prefix = f"data/{id}"
     image_pil = Image.open(os.path.join(img_prefix, img_path)).convert("RGB")
     data = {"path": os.path.join(str(id), str(img_path)), "text_prompt": string_prompt, "threshold": threshold}
     seg = requests.post("http://118.67.142.203:30008/segment_text/", data=data)
-    # print(type(seg))
-    # print(type(json.loads(seg)))
-    # print(json.loads(seg))
-    # rle_mask = json.loads(seg)
-    # masks = torch.tensor(json.loads(seg.json()))
     mask_dict = json.loads(seg.content)
     temp = []
+    asyncio.run(make_annotation_json(img_path, mask_dict))
     for label, mask in mask_dict["masks"].items():
         seg_mask = rle_decode(mask, mask_dict['size'])
         temp.append((np.array(seg_mask), label))
-        # mask_dict["masks"][label] = seg_mask
-    # for key, value in mask_dict.items():
-    #     temp.append((np.array(value), key))
-    # /image_array = np.asarray(image_pil)
-    # image = draw_image(image_array, masks)
-    # image = Image.fromarray(np.uint8(image)).convert("RGB")
-    end_time = time.time_ns() // 1_000_000
-    with open("no_rle.txt", "a") as f:
-       f.write(f"{(end_time - start_time)}\n")
     return image_pil, temp
 
 
@@ -131,7 +136,15 @@ def finish(id):
     res = requests.post("http://118.67.142.203:30008/remove/", data=data)
     shutil.rmtree(f"data/{str(id)}")  # 확인 필요
 
-
+def save_annotation(id):
+    global annotation_info
+    file_prefix = os.join("data", id)
+    file_path = os.join(file_prefix, "data.json")  # 저장할 파일 경로 및 이름
+    annotation_info['user_id'] = id
+    with open(file_path, "w") as json_file:
+        json.dump(annotation_info, json_file, indent=4) 
+    
+    
 # Description
 title = "<center><strong><font size='8'>Image Annotation Tool<font></strong></center>"
 
@@ -150,6 +163,16 @@ gdSAM_img_e = gr.AnnotatedImage(label="GDSAM", interactive=False)
 
 id = gr.Textbox()
 img_list = gr.JSON()
+annotation_info = {"annotation" : list()}
+'''
+user_id : string
+annotation : array of dict
+ㄴimage_path : string
+ㄴsize : array of int
+ㄴmasks : array of dict
+    ㄴlabel : string
+    ㄴmask : string (rle-encoded)
+'''
 drive_data = gr.Radio(["drive dataset", "others"])
 my_theme = gr.Theme.from_hub("nuttea/Softblue")
 with gr.Blocks(
@@ -240,6 +263,7 @@ with gr.Blocks(
         ],
     )
     finish_btn_e.click(finish, inputs=id)
+    save_btn_e.click(save_annotation, inputs=id)
     ################################################
 
     segm_img_e.select(get_points, inputs=[segm_img_e], outputs=[coord_value])
