@@ -103,25 +103,25 @@ class CustomKRLoadSegmentation(torch.utils.data.Dataset):
     KRLoadClass = namedtuple('KRLoadClass', ['name', 'id', 'color'])
 
     classes = [
-        KRLoadClass('background', 0, (0,0,0)),
-        KRLoadClass('wheelchair', 1, (255, 0, 0)),
-        KRLoadClass('truck', 2, (0, 255, 0)),
-        KRLoadClass('traffic_sign', 3, (0, 0, 255)),
-        KRLoadClass('traffic_light',4, (255, 0, 255)),
-        KRLoadClass('stroller', 5, (255, 255, 0 )),
-        KRLoadClass('stop', 6, (0 ,255, 255)),
-        KRLoadClass('scooter', 7, (128, 128, 0)),
-        KRLoadClass('pole', 8, (0, 128, 128)),
-        KRLoadClass('person', 9, (128, 0, 128)),
-        KRLoadClass('motorcycle', 10, (128, 0, 255)),
-        KRLoadClass('dog', 11, (255, 128, 255)),
-        KRLoadClass('cat', 12, (64, 0, 0)),
-        KRLoadClass('carrier', 13, (0, 64, 0)),
-        KRLoadClass('car', 14, (0, 0, 64)),
-        KRLoadClass('bus', 15, (64, 64, 0)),
-        KRLoadClass('bollard', 16, (64, 0, 64)),
-        KRLoadClass('bicycle', 17, (0, 64, 64)),
-        KRLoadClass('barricade', 18, (0, 192, 0)),
+        KRLoadClass('background', 0, (0,0,0)),      # 배경
+        KRLoadClass('wheelchair', 1, (255, 0, 0)),  # 휠체어
+        KRLoadClass('carrier', 2, (0, 64, 0)),     # 화물차
+        KRLoadClass('stop', 3, (0 ,255, 255)),     # 정지선
+        KRLoadClass('cat', 4, (64, 0, 0)),         # 고양이
+        KRLoadClass('pole', 5, (0, 128, 128)),     # 대
+        KRLoadClass('traffic_light',6, (255, 0, 255)),  # 신호등
+        KRLoadClass('traffic_sign', 7, (0, 0, 255)),    # 교통 표지판
+        KRLoadClass('stroller', 8, (255, 255, 0 )), # 유모차
+        KRLoadClass('dog', 9, (255, 128, 255)),    # 개
+        KRLoadClass('barricade', 10, (0, 192, 0)),  # 바리케이드
+        KRLoadClass('person', 11, (128, 0, 128)),    # 사람 
+        KRLoadClass('scooter', 12, (128, 128, 0)),  # 스쿠터
+        KRLoadClass('car', 13, (0, 0, 64)),         # 차
+        KRLoadClass('truck', 14, (0, 255, 0)),       # 트럭
+        KRLoadClass('bus', 15, (64, 64, 0)),        # 버스 
+        KRLoadClass('bollard', 16, (64, 0, 64)),    # 인도 블럭 바리케이드 비슷한거
+        KRLoadClass('motorcycle', 17, (128, 0, 255)),   # 오토바이
+        KRLoadClass('bicycle', 18, (0, 64, 64)),    # 자전거
     ]
     class_names = [i.name for i in classes]
 
@@ -160,10 +160,6 @@ class CustomKRLoadSegmentation(torch.utils.data.Dataset):
 
         image = np.array(image,dtype=np.uint8)
         target = np.array(target,dtype=np.uint8)
-        
-        for l in self.classes:
-            idx = target==l.id
-            target[idx] = l.train_id
 
         image = Image.fromarray(image)
         target = Image.fromarray(target)
