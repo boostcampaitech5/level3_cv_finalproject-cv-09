@@ -8,7 +8,7 @@ import argparse
 from torchvision import transforms
 from io import BytesIO
 from hrnet.models.light import PLModel
-from hrnet.dataset import CustomCityscapesSegmentation
+from hrnet.dataset import CustomKRLoadSegmentation
 from torchvision.transforms import ToTensor, Normalize
 from zipfile import ZipFile
 from utils.tools_gradio import fast_process
@@ -68,24 +68,25 @@ def rle_encode(mask):
     return rle
 
 
-def test(model, image):
+def test(model, image, tuple):
     args = get_arg()
     model = model.cuda()
     model.eval()
-
+    mask_list = []
+    
     with torch.no_grad():
         n_class = args.num_classes
-
-
         image = image.cuda()    
-        outputs = model(image)
+        logits = model(image)
         
         # restore original size
-        outputs = torch.sigmoid(outputs)
+        outputs = torch.sigmoid(logits)
         outputs = outputs.argmax(dim=1)
         outputs = outputs.detach().cpu().numpy()
-            
-    return outputs
+        result = outputs == np.arange(logits.shape[1])[:, np.newaxis, np.newaxis]
+        for i in range(n_class):
+            mask_list.append([tuple.label[i], result[i]])
+    return outputs, mask_list
 
 
 def get_arg():
@@ -115,34 +116,31 @@ def process_image_and_get_masks(img):
     model = PLModel(args=args)
 
     # Get masks using the 'test' function
-    masks = test(model, image)
+    masks = test(model, image, CustomKRLoadSegmentation)
     return masks
 
 
 def mask_color(mask,tuple):
     cmap = tuple.cmap
-    label = tuple.label
     if isinstance(mask,np.ndarray):
-        mask_list = []
         r_mask = np.zeros_like(mask,dtype=np.uint8)
         g_mask = np.zeros_like(mask,dtype=np.uint8)
         b_mask = np.zeros_like(mask,dtype=np.uint8)
         for k in range(len(cmap)):
             indice = mask==k
-            mask_list.append([label[k], indice])
             r_mask[indice] = cmap[k][0]
             g_mask[indice] = cmap[k][1]
             b_mask[indice] = cmap[k][2]
-        return np.stack([b_mask, g_mask, r_mask], axis=2), mask_list
+        return np.stack([b_mask, g_mask, r_mask], axis=2)
 
 def hrnet_inference(id, file_name):
     img = Image.open(f"{FOLDER_DIR}/{id}/original/{file_name}")
-    mask = process_image_and_get_masks(img)
+    mask, mask_list = process_image_and_get_masks(img)
 
     # 이미지 저장
     out = np.squeeze(mask,axis=0)
 
-    out, mask_list = mask_color(out,CustomCityscapesSegmentation)
+    out = mask_color(out,CustomKRLoadSegmentation)
     output_path = f'{FOLDER_DIR}/{id}/hrnet/{file_name}'
     cv2.imwrite(output_path, out)
     
