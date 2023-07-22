@@ -18,7 +18,7 @@ import pytorch_lightning as pl
 def get_arg():
     parser = argparse.ArgumentParser(description="mlflow-pytorch test")
     parser.add_argument("--batch",type=int, default=2)
-    parser.add_argument("--val_batch",type=int, default=4)
+    parser.add_argument("--val_batch",type=int, default=8)
     parser.add_argument("--lr",type=float, default=1e-3)
     parser.add_argument("--epochs",type=int,default=2)
     parser.add_argument("--accelerator", choices=['cpu','gpu','auto'],default='gpu')
@@ -29,7 +29,7 @@ def get_arg():
     parser.add_argument("--num_classes", type=int, default= 19)
     parser.add_argument("--backbone", type=str, default='hrnet48')
     parser.add_argument("--pretrained", type=str, default='/opt/ml/level3_cv_finalproject-cv-09/MLflow/checkpoint/best.pth')
-    parser.add_argument("--experiment_name",type=str, default='mlflow_ex')
+    parser.add_argument("--experiment_name",type=str, default='krload')
     
     args = parser.parse_args()
     return args
@@ -48,14 +48,15 @@ def run(args):
     
     # 실험 이름에 따라 실험 뽑기
     experiment = mlflow.get_experiment_by_name(args.experiment_name)
+    
     # 없다면 생성
     if experiment is None:
         experiment_id = mlflow.create_experiment(name=args.experiment_name)
         experiment = mlflow.get_experiment_by_name(args.experiment_name)
-        print(experiment)
     
     # 이전 실험들을 불러와서 제일 높은 max값 불러오기
     experiment_id = experiment.experiment_id
+    
     
     runs = client.search_runs(experiment_id)
     best_score = 0
@@ -67,7 +68,6 @@ def run(args):
         # best_score = best_runs.data.metrics['test_score']
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    batch_size = args.batch
     
     train_data = CustomCityscapesSegmentation(
         data_dir = os.path.join(base_path,'data','cityscape'),
@@ -92,23 +92,23 @@ def run(args):
     )
     
     train_loader = torch.utils.data.DataLoader(dataset = train_data,
-                                               batch_size = args.batch, shuffle = True,
+                                               batch_size = args.batch, shuffle = True, num_workers=8,
                                                )
     val_loader = torch.utils.data.DataLoader(dataset = val_data,
-                                                batch_size = args.val_batch, shuffle = False,
+                                                batch_size = args.val_batch, shuffle = False, num_workers=8,
                                                )
     
     test_loader = torch.utils.data.DataLoader(dataset = test_data,
-                                                batch_size = args.val_batch, shuffle = False,
+                                                batch_size = args.val_batch, shuffle = False, num_workers=8,
                                                )
     
     # lighiting model 선언
     model = PLModel(args=args)
     
     run_name = datetime.now(pytz.timezone('Asia/Seoul')).strftime("%Y%m%d%H%M")
-    mlflow.pytorch.autolog()
-    with mlflow.start_run(run_name=run_name) as run:
-        
+    with mlflow.start_run(experiment_id=experiment_id,run_name=run_name) as run:
+        mlflow.pytorch.autolog()
+        print(f"running in {run.info.run_id}")
         artifact_path = run.info.artifact_uri[7:]
         # checkpoint callback 선언
         checkpoint_callback = ModelCheckpoint(
@@ -132,10 +132,11 @@ def run(args):
             )
         
         # model train
-        trainer.fit(model,train_loader,val_loader)
-        
-        # load best model using checkpoint
-        model.load_from_checkpoint(checkpoint_path = checkpoint_callback.best_model_path, args=args)
+        if args.epochs:
+            trainer.fit(model,train_loader,val_loader)
+            
+            # load best model using checkpoint
+            model.load_from_checkpoint(checkpoint_path = checkpoint_callback.best_model_path, args=args)
         
         # model test
         trainer.test(model,test_loader)
@@ -168,10 +169,16 @@ def run(args):
                 )
             print(f"model '{args.regist_name}' {now.version} is changing 'Production'")
             
-            # 마지막 버전 가져오기 -> return list
+            # 마지막 버전 가져오기 (현재버전)-> return list
             last_version = client.get_latest_versions(
                                                     name=args.regist_name,
                                                     stages=['Production'])[0]
+            
+            # checkpoint에 weight저장
+            torch.save({"state_dict":model.net.state_dict()}, f=args.pretrained)
+            new_version_save = args.pretrained.replace("best",f'last_version')
+            torch.save({"state_dict":model.net.state_dict()}, f=new_version_save)
+            
             
             pre_version = int(last_version.version)-1
             # 이전 버전이 있었다면 staging변경

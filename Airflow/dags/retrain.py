@@ -4,7 +4,6 @@ from airflow.sensors.filesystem import FileSensor
 from airflow.exceptions import AirflowSkipException
 
 from datetime import datetime
-import pytz
 import os
 
 class FileSensorWithSkip(FileSensor):
@@ -18,7 +17,8 @@ class FileSensorWithSkip(FileSensor):
 default_args = {
     # 'owner': 'kyle',
     'depends_on_past': False,  # 이전 DAG의 Task가 성공, 실패 여부에 따라 현재 DAG 실행 여부가 결정. False는 과거의 실행 결과 상관없이 매일 실행한다
-    'start_date': datetime(2023,7,12,00,tzinfo=pytz.timezone('Asia/Seoul')),
+    # 'start_date': datetime(2023,7,12,00,tzinfo=pytz.timezone('Asia/Seoul')),
+    'start_date': datetime.now(),
     # 'retires': 1,  # 실패시 재시도 횟수
     # 'retry_delay': timedelta(minutes=5)  # 만약 실패하면 5분 뒤 재실행
     # 'priority_weight': 10 # DAG의 우선 순위를 설정할 수 있음
@@ -29,13 +29,13 @@ default_args = {
     # 'on_retry_callback': another_function
 }
 
-# Ariflow 폴더 경로의 retrain.txt
-trigger_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),'retrain.txt')
+# Ariflow/trigger 폴더 경로의 retrain.txt
+trigger_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),'trigger','retrain.txt')
 
 with DAG(
     dag_id = 'retrain_dag',         # dag 
     default_args = default_args,    # dag 기본 옵션
-    schedule_interval= "0 0 * * *", # 매 자정마다 실행하겠다
+    schedule_interval= "0 15 * * *", # 매 자정마다 실행하겠다 UTC 기준 15시
     tags=['retrain_dags']
 ) as dag:
     

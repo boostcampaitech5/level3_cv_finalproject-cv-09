@@ -19,3 +19,5 @@ data/
 mlruns/
 FastAPI/data
 checkpoint/
+trigger/
+airflow.db
