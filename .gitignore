@@ -1,5 +1,6 @@
 practice
 .pth
+*.cfg
 __pycache__
 images_win
 images_mac
