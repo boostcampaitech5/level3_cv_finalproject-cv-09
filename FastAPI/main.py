@@ -8,7 +8,7 @@ import argparse
 from torchvision import transforms
 from io import BytesIO
 from hrnet.models.light import PLModel
-from hrnet.dataset import CustomCityscapesSegmentation
+from hrnet.dataset import CustomKRLoadSegmentation
 from torchvision.transforms import ToTensor, Normalize
 from zipfile import ZipFile
 from utils.tools_gradio import fast_process
@@ -68,23 +68,29 @@ def rle_encode(mask):
     return rle
 
 
-def test(model, image):
+def test(model, image, tuple):
     args = get_arg()
     model = model.cuda()
     model.eval()
-
+    mask_list = []
+    
     with torch.no_grad():
         n_class = args.num_classes
 
-        image = image.cuda()
-        outputs = model(image)
+        image = image.cuda()    
+        logits = model(image)
+        
 
         # restore original size
-        outputs = torch.sigmoid(outputs)
+        outputs = torch.sigmoid(logits)
         outputs = outputs.argmax(dim=1)
         outputs = outputs.detach().cpu().numpy()
 
-    return outputs
+        result = outputs == np.arange(logits.shape[1])[:, np.newaxis, np.newaxis]
+        for i in range(n_class):
+            mask_list.append([tuple.label[i], result[i]])
+    return outputs, mask_list
+
 
 
 def get_arg():
@@ -120,36 +126,32 @@ def process_image_and_get_masks(img):
     model = PLModel(args=args)
 
     # Get masks using the 'test' function
-    masks = test(model, image)
+    masks = test(model, image, CustomKRLoadSegmentation)
     return masks
 
 
 def mask_color(mask, tuple):
     cmap = tuple.cmap
-    label = tuple.label
-    if isinstance(mask, np.ndarray):
-        mask_list = []
-        r_mask = np.zeros_like(mask, dtype=np.uint8)
-        g_mask = np.zeros_like(mask, dtype=np.uint8)
-        b_mask = np.zeros_like(mask, dtype=np.uint8)
+    if isinstance(mask,np.ndarray):
+        r_mask = np.zeros_like(mask,dtype=np.uint8)
+        g_mask = np.zeros_like(mask,dtype=np.uint8)
+        b_mask = np.zeros_like(mask,dtype=np.uint8)
         for k in range(len(cmap)):
-            indice = mask == k
-            mask_list.append([label[k], indice])
+            indice = mask==k
             r_mask[indice] = cmap[k][0]
             g_mask[indice] = cmap[k][1]
             b_mask[indice] = cmap[k][2]
-        return np.stack([b_mask, g_mask, r_mask], axis=2), mask_list
+        return np.stack([b_mask, g_mask, r_mask], axis=2)
 
 
 def hrnet_inference(id, file_name):
     img = Image.open(f"{FOLDER_DIR}/{id}/original/{file_name}")
-    mask = process_image_and_get_masks(img)
+    mask, mask_list = process_image_and_get_masks(img)
 
     # 이미지 저장
     out = np.squeeze(mask, axis=0)
-
-    out, mask_list = mask_color(out, CustomCityscapesSegmentation)
-    output_path = f"{FOLDER_DIR}/{id}/hrnet/{file_name}"
+    out = mask_color(out,CustomKRLoadSegmentation)
+    output_path = f'{FOLDER_DIR}/{id}/hrnet/{file_name}'
     cv2.imwrite(output_path, out)
 
     return mask_list, output_path
@@ -159,7 +161,7 @@ def hrnet_inference(id, file_name):
 async def segment_everything(
     image,
     input_size=1024,
-    better_quality=True,
+    better_quality=False,
     use_retina=True,
     mask_random_color=True,
 ):
@@ -174,7 +176,10 @@ async def segment_everything(
 
     nd_image = np.array(image)
     annotations = app.state.mask_generator.generate(nd_image)
-
+    mask_dict = {"masks" : list(), "size": [new_h, new_w]}
+    for idx, annotation in enumerate(annotations):
+        rle_mask = rle_encode(annotation['segmentation'])
+        mask_dict['masks'].append(rle_mask)
     fig = fast_process(
         annotations=annotations,
         image=image,
@@ -185,7 +190,7 @@ async def segment_everything(
         bbox=None,
         use_retina=use_retina,
     )
-    return fig
+    return fig, mask_dict
 
 
 @torch.no_grad()
@@ -197,11 +202,11 @@ async def segment_dino(
         image_pil, text_prompt, box_threshold, text_threshold
     )  # channel x height x width
     labels = [f"{phrase} {logit:.2f}" for phrase, logit in zip(phrases, logits)]
-    mask_dict = {"masks": dict(), "size": [image_pil.height, image_pil.width]}
+    mask_dict = {"masks" : dict(), "size": [image_pil.height, image_pil.width]}
+    print(mask_dict['size'])
+
     for idx, label in enumerate(labels):
         label, logit = label.split()
-        print(label, logit)
-        print(masks[idx].shape)
         if label in mask_dict["masks"]:
             mask1 = np.array(mask_dict["masks"][label])
             mask2 = np.array(masks[idx])
@@ -212,8 +217,6 @@ async def segment_dino(
     for label, mask in mask_dict["masks"].items():
         rle_mask = rle_encode(mask)
         mask_dict["masks"][label] = rle_mask
-        print(label, mask_dict["masks"][label])
-    print(mask_dict["size"])
     image_array = np.asarray(image_pil)
     image = draw_image(image_array, masks, boxes, labels)
     image = Image.fromarray(np.uint8(image)).convert("RGB")
@@ -256,16 +259,17 @@ async def segment(path: str = Form(...)):
     id, file_name = path.split("/")
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
     img = Image.open(img_path).convert("RGB")
-    output = await segment_everything(img)
-    output = output.convert("RGB")
+    fig, mask_dict = await segment_everything(img)
+    output = fig.convert("RGB")
     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
         os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
     output.save(f"{FOLDER_DIR}/{id}/segment/{file_name}")
-    seg_img = FileResponse(
-        f"{FOLDER_DIR}/{id}/segment/{file_name}",
-        media_type="image/jpg",
-    )
-    return seg_img
+    # seg_img = FileResponse(
+    #     f"{FOLDER_DIR}/{id}/segment/{file_name}",
+    #     media_type="image/jpg",
+    # )
+    output_reponse = JSONResponse(content=mask_dict)
+    return output_reponse
 
 
 @app.post("/segment_text/")
@@ -320,7 +324,7 @@ def json_download(path: str = Form(...)):
 
 
 @app.post("/remove/")
-def remove(id: str = Form(...)):
+def remove(id: str = Form(...), annotated_data: dict = Form(...)):
     if id == "":
         return 0
     zip_file = ZipFile(f"{FOLDER_DIR}/{id}/{id}.zip", "w")

@@ -21,5 +21,7 @@ data/
 mlruns/
 FastAPI/data
 checkpoint/
+*/key
+key
 trigger/
 airflow.db
