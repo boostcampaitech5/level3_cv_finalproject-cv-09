@@ -22,6 +22,17 @@ def draw_image(image, masks, alpha=0.4):
         )
     return image.numpy().transpose(1, 2, 0)
 
+# RLE 디코딩 함수
+def rle_decode(mask_rle, shape):
+    s = mask_rle.split()
+    starts, lengths = [np.asarray(x, dtype=int) for x in (s[0:][::2], s[1:][::2])]
+    starts -= 1
+    ends = starts + lengths
+    img = np.zeros(shape[0]*shape[1], dtype=np.uint8)
+    for lo, hi in zip(starts, ends):
+        img[lo:hi] = 1
+    return img.reshape(shape)
+
 
 def zip_upload(is_drive, img_zip, id):
     with ZipFile(img_zip.name, "r") as f:
@@ -65,6 +76,14 @@ def segment(id, img_path):
     return Image.open(io.BytesIO(seg.content))
 
 
+def hrnet_request(id, img_path):
+    data = {"path": os.path.join(str(id), str(img_path))}
+    res = requests.post("http://118.67.142.203:30008/segment_hrnet/", data=data)
+    # Please check if next code works
+    hrnet_img, hrnet_json = res.content
+    return Image.open(io.BytesIO(hrnet_img))
+    
+
 # 현석이가 만들어 줄 것.
 def segment_text(id, img_path, text_prompt, threshold):
     start_time = time.time_ns() // 1_000_000
@@ -80,9 +99,12 @@ def segment_text(id, img_path, text_prompt, threshold):
     # masks = torch.tensor(json.loads(seg.json()))
     mask_dict = json.loads(seg.content)
     temp = []
-    for key, value in mask_dict.items():
-        temp.append((np.array(value), key))
-
+    for label, mask in mask_dict["masks"].items():
+        seg_mask = rle_decode(mask, mask_dict['size'])
+        temp.append((np.array(seg_mask), label))
+        # mask_dict["masks"][label] = seg_mask
+    # for key, value in mask_dict.items():
+    #     temp.append((np.array(value), key))
     # /image_array = np.asarray(image_pil)
     # image = draw_image(image_array, masks)
     # image = Image.fromarray(np.uint8(image)).convert("RGB")

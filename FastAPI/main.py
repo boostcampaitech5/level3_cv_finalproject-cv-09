@@ -3,7 +3,13 @@ import torch
 import numpy as np
 import shutil
 import json
-from PIL import Image
+import cv2
+import argparse
+from torchvision import transforms
+from io import BytesIO
+from hrnet.models.light import PLModel
+from hrnet.dataset import CustomCityscapesSegmentation
+from torchvision.transforms import ToTensor, Normalize
 from zipfile import ZipFile
 from utils.tools_gradio import fast_process
 from fastapi import FastAPI, UploadFile, File, Form
@@ -43,7 +49,7 @@ async def startup_event():
 
 def change_path(path):
     if path.endswith('.png'):
-        path = str(path.split('.')[0] + '.jpg')
+        path = str(path.split('.')[0] + '.jpg')
     return path
         
 
@@ -51,7 +57,7 @@ def rle_encode(mask):
     """
     다차원 텐서를 RLE 인코딩하는 함수
 
-    :param tensor: 3차원 텐서 (channel x height x width)
+    :param tensor: 2차원 텐서 (height x width)
     :return: RLE 인코딩된 문자열 리스트
     """
     mask_flatten = mask.flatten()
@@ -61,6 +67,86 @@ def rle_encode(mask):
     rle = ' '.join(str(x) for x in runs)
     return rle
 
+
+def test(model, image):
+    args = get_arg()
+    model = model.cuda()
+    model.eval()
+
+    with torch.no_grad():
+        n_class = args.num_classes
+
+
+        image = image.cuda()    
+        outputs = model(image)
+        
+        # restore original size
+        outputs = torch.sigmoid(outputs)
+        outputs = outputs.argmax(dim=1)
+        outputs = outputs.detach().cpu().numpy()
+            
+    return outputs
+
+
+def get_arg():
+    parser = argparse.ArgumentParser(description="mlflow-pytorch test")
+    parser.add_argument("--accelerator", choices=['cpu','gpu','auto'],default='gpu')
+    parser.add_argument("--precision", choices=['32','16'],default='16')
+    parser.add_argument("--regist_name", type=str, default="register_model")
+    parser.add_argument("--bn_type", type=str, default= 'torchbn')
+    parser.add_argument("--num_classes", type=int, default= 19)
+    parser.add_argument("--backbone", type=str, default='hrnet48')
+    parser.add_argument("--pretrained", type=str, default='/opt/ml/level3_cv_finalproject-cv-09/MLflow/checkpoint/best.pth')
+    parser.add_argument("--experiment_name",type=str, default='mlflow_ex')
+    
+    args = parser.parse_args()
+    return args
+
+
+def process_image_and_get_masks(img):
+    args = get_arg()
+
+    # Load and preprocess the image
+    convert_tensor = transforms.Compose([ToTensor(),Normalize((0.286,0.325,0.283),(0.186,0.190,0.187))])
+    image = convert_tensor(img)
+    image = image.unsqueeze(0)
+
+    # Initialize the lighiting model
+    model = PLModel(args=args)
+
+    # Get masks using the 'test' function
+    masks = test(model, image)
+    return masks
+
+
+def mask_color(mask,tuple):
+    cmap = tuple.cmap
+    label = tuple.label
+    if isinstance(mask,np.ndarray):
+        mask_list = []
+        r_mask = np.zeros_like(mask,dtype=np.uint8)
+        g_mask = np.zeros_like(mask,dtype=np.uint8)
+        b_mask = np.zeros_like(mask,dtype=np.uint8)
+        for k in range(len(cmap)):
+            indice = mask==k
+            mask_list.append([label[k], indice])
+            r_mask[indice] = cmap[k][0]
+            g_mask[indice] = cmap[k][1]
+            b_mask[indice] = cmap[k][2]
+        return np.stack([b_mask, g_mask, r_mask], axis=2), mask_list
+
+def hrnet_inference(id, file_name):
+    img = Image.open(f"{FOLDER_DIR}/{id}/original/{file_name}")
+    mask = process_image_and_get_masks(img)
+
+    # 이미지 저장
+    out = np.squeeze(mask,axis=0)
+
+    out, mask_list = mask_color(out,CustomCityscapesSegmentation)
+    output_path = f'{FOLDER_DIR}/{id}/hrnet/{file_name}'
+    cv2.imwrite(output_path, out)
+    
+    return mask_list, output_path
 
 @torch.no_grad()
 async def segment_everything(
@@ -103,21 +189,23 @@ async def segment_dino(box_threshold = 0.7, text_threshold = 0.7, image_path = "
     for idx, phrase in enumerate(phrases):
         phrases[idx] = phrase.replace(" ", "_")
     labels = [f"{phrase} {logit:.2f}" for phrase, logit in zip(phrases, logits)]
-    mask_dict = dict()
+    mask_dict = {"masks" : dict(), "size": [image_pil.height, image_pil.width]}
     for idx, label in enumerate(labels):
         label, logit = label.split()
         print(label, logit)
         print(masks[idx].shape)
-        if label in mask_dict:
-            mask1 = np.array(mask_dict[label])
-            mask2 = np.array(masks[idx].tolist())
+        if label in mask_dict["masks"]:
+            mask1 = np.array(mask_dict["masks"][label])
+            mask2 = np.array(masks[idx])
             or_mask = np.logical_or(mask1, mask2)
-            mask_dict[label] = or_mask.tolist()
+            mask_dict["masks"][label] = torch.tensor(or_mask)
         else:
-            mask_dict[label] = masks[idx].tolist()
-    rle_mask = rle_encode(masks)
-    json_rle = json.dumps(rle_mask)
-    json_mask = json.dumps(masks.tolist())
+            mask_dict["masks"][label] = torch.tensor(masks[idx])
+    for label, mask in mask_dict["masks"].items():
+        rle_mask = rle_encode(mask)
+        mask_dict["masks"][label] = rle_mask
+        print(label, mask_dict["masks"][label])
+    print(mask_dict['size'])
     image_array = np.asarray(image_pil)
     image = draw_image(image_array, masks, boxes, labels)
     image = Image.fromarray(np.uint8(image)).convert("RGB")
@@ -129,6 +217,7 @@ async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
     path_list.append(f"{FOLDER_DIR}/{id}/original")
     path_list.append(f"{FOLDER_DIR}/{id}/segment")
     path_list.append(f"{FOLDER_DIR}/{id}/zip")
+    path_list.append(f"{FOLDER_DIR}/{id}/hrnet")
 
     for path in path_list:
         if not os.path.isdir(path):
@@ -188,7 +277,26 @@ async def segment_text(path: str = Form(...), text_prompt: str = Form(...), thre
     # )
     output_reponse = JSONResponse(content=text_seg_dict)
     return output_reponse
+
+
+# Send data from FastAPI server to FE server
+@app.post("/segment_hrnet/")
+def segment_hrnet(path: str = Form(...)):
+    path = change_path(path)
+    id, file_name = path.split("/")
+    # mask_list = ["road", array[[False, False, ...]]]
+    mask_list = hrnet_inference(id, file_name)
     
+    hrnet_img = FileResponse(
+        f"{FOLDER_DIR}/{id}/hrnet/{file_name}",
+        media_type="image/jpg",
+    )
+    # please check if JSONResponse code works
+    hrnet_json = JSONResponse(content=mask_list)
+    return hrnet_img, hrnet_json
+    
+
+
 
 @app.post("/json_download/")
 def json_download(path: str = Form(...)):
@@ -196,7 +304,7 @@ def json_download(path: str = Form(...)):
     path = change_path(path)
     file_name = file_name.split(".")[0]
     output = {"test": [1, 2, 3, 4], "test2": [5, 6, 7, 8]}
-    with open(f"{FOLDER_DIR}/{id}/{file_name}_segment.json", "w") as f:
+    with open(f"{FOLDER_DIR}/{id}/{file_name}.json", "w") as f:
         json.dump(output, f, indent=2)
     return output
 
@@ -205,7 +313,7 @@ def json_download(path: str = Form(...)):
 def remove(id: str = Form(...)):
     if id == "":
         return 0
-    zip_file = ZipFile(f"{FOLDER_DIR}/{id}/zip.zip", 'w')
+    zip_file = ZipFile(f"{FOLDER_DIR}/{id}/{id}.zip", 'w')
     for file in os.listdir(f"{FOLDER_DIR}/{id}/original"):
         zip_file.write(os.path.join(f"{FOLDER_DIR}/{id}/original", file))
     zip_file.close()
