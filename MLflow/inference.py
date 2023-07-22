@@ -47,18 +47,22 @@ def test(model, image):
 
 
         image = image.cuda()    
-        outputs = model(image)
+        logits = model(image)
         
         # restore original size
-        outputs = torch.sigmoid(outputs)
+        outputs = torch.sigmoid(logits)
         # outputs = (outputs > 0.1).detach().cpu().numpy()
         #for i in range(n_class):
         #    outputs[:,i] = (outputs[:,i]> 0.5)
         outputs = outputs.argmax(dim=1)
         outputs = outputs.detach().cpu().numpy()
+        result = outputs == np.arange(logits.shape[1])[:, np.newaxis, np.newaxis]
+        
+        # result = np.zeros_like(logits.detach().cpu().numpy(), dtype=bool)
+        # result[:,outputs,:,:] = True
         
             
-    return outputs
+    return outputs, result
 
 
 
@@ -111,9 +115,10 @@ def mask_color(mask,cmap):
 if __name__=="__main__":
     img = Image.open("/opt/ml/level3_cv_finalproject-cv-09/MLflow/test.jpg")
 
-    mask = process_image_and_get_masks(img)
+    mask,result = process_image_and_get_masks(img)
+    print(f"result shpae: {result.shape}, {result[12][540][1100]}")
 
-    print(mask.shape)
+    print(f"mask shape: {mask.shape}")
 
     # 이미지 저장
     out = np.squeeze(mask,axis=0)
