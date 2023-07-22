@@ -1,5 +1,6 @@
 practice
 .pth
+*.cfg
 __pycache__
 images_win
 images_mac
@@ -22,3 +23,5 @@ FastAPI/data
 checkpoint/
 */key
 key
+trigger/
+airflow.db
