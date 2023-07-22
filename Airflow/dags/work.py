@@ -219,7 +219,7 @@ def change_json_to_image(id, ext):
             
             file_path = file_path.replace(".json",ext)
 
-            image = mask_color(image, cmap)
+            # image = mask_color(image, cmap)
 
             im = Image.fromarray(image)
 
