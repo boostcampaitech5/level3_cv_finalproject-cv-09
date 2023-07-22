@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import json
 from torchvision import datasets, transforms
 from PIL import Image
 import tqdm
@@ -38,17 +39,15 @@ from torchvision.transforms import ToTensor, Normalize
     
 #     return img.reshape(height, width)
 
-def test(model, image, tuple):
+def test(model, image):
     args = get_arg()
     model = model.cuda()
     model.eval()
     mask_list = []
-    
     with torch.no_grad():
         n_class = args.num_classes
         image = image.cuda()    
         logits = model(image)
-        
         # restore original size
         outputs = torch.sigmoid(logits)
         # outputs = (outputs > 0.1).detach().cpu().numpy()
@@ -58,7 +57,7 @@ def test(model, image, tuple):
         outputs = outputs.detach().cpu().numpy()
         result = outputs == np.arange(logits.shape[1])[:, np.newaxis, np.newaxis]
         for i in range(n_class):
-            mask_list.append([tuple.label[i], result[i]])
+            mask_list.append([CustomKRLoadSegmentation.label[i], result[i]])
         # result = np.zeros_like(logits.detach().cpu().numpy(), dtype=bool)
         # result[:,outputs,:,:] = True
             
@@ -94,7 +93,7 @@ def process_image_and_get_masks(img):
     model = PLModel(args=args)
 
     # Get masks using the 'test' function
-    masks = test(model, image, CustomKRLoadSegmentation)
+    masks = test(model, image)
     return masks
 
 def mask_color(mask,tuple):
@@ -115,8 +114,16 @@ def mask_color(mask,tuple):
 if __name__=="__main__":
     img = Image.open("/opt/ml/level3_cv_finalproject-cv-09/MLflow/test.jpg")
 
-    mask,mask_list = process_image_and_get_masks(img)
-    print(mask_list)
+    bool_list = []
+    mask, mask_list = process_image_and_get_masks(img)
+    
+    for element in mask_list :
+        temp_dict = {element[0] : np.array(element[1]).tolist()}
+        bool_list.append(temp_dict)
+        
+    json_bool_list = json.dumps(bool_list)
+    # with open('json_bool.json', 'w') as f:
+    #     json.dump(json_bool_list, f)
     # print(f"result shpae: {result.shape}, {result[12][540][1100]}")
 
     # print(f"mask shape: {mask.shape}")
