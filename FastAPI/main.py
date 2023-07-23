@@ -68,7 +68,7 @@ def rle_encode(mask):
     return rle
 
 
-def test(model, image, tuple):
+def test(model, image):
     args = get_arg()
     model = model.cuda()
     model.eval()
@@ -76,10 +76,8 @@ def test(model, image, tuple):
     
     with torch.no_grad():
         n_class = args.num_classes
-
         image = image.cuda()    
         logits = model(image)
-        
 
         # restore original size
         outputs = torch.sigmoid(logits)
@@ -88,7 +86,8 @@ def test(model, image, tuple):
 
         result = outputs == np.arange(logits.shape[1])[:, np.newaxis, np.newaxis]
         for i in range(n_class):
-            mask_list.append([tuple.label[i], result[i]])
+            mask_list.append([CustomKRLoadSegmentation.label[i], result[i]])
+            
     return outputs, mask_list
 
 
@@ -126,7 +125,7 @@ def process_image_and_get_masks(img):
     model = PLModel(args=args)
 
     # Get masks using the 'test' function
-    masks = test(model, image, CustomKRLoadSegmentation)
+    masks = test(model, image)
     return masks
 
 
@@ -147,14 +146,18 @@ def mask_color(mask, tuple):
 def hrnet_inference(id, file_name):
     img = Image.open(f"{FOLDER_DIR}/{id}/original/{file_name}")
     mask, mask_list = process_image_and_get_masks(img)
-
+    rle_list = []
+    for element in mask_list :
+        temp = [element[0], rle_encode(np.array(element[1]))]
+        rle_list.append(temp)
+        
     # 이미지 저장
     out = np.squeeze(mask, axis=0)
     out = mask_color(out,CustomKRLoadSegmentation)
     output_path = f'{FOLDER_DIR}/{id}/hrnet/{file_name}'
     cv2.imwrite(output_path, out)
 
-    return mask_list, output_path
+    return rle_list
 
 
 @torch.no_grad()
@@ -300,16 +303,16 @@ async def segment_text(
 def segment_hrnet(path: str = Form(...)):
     path = change_path(path)
     id, file_name = path.split("/")
-    # mask_list = ["road", array[[False, False, ...]]]
-    mask_list = hrnet_inference(id, file_name)
-
+    
+    rle_list = hrnet_inference(id, file_name)
+    # Need to be implemented : Remove \(backslash) from the json_bool_list
     hrnet_img = FileResponse(
         f"{FOLDER_DIR}/{id}/hrnet/{file_name}",
         media_type="image/jpg",
     )
-    # please check if JSONResponse code works
-    hrnet_json = JSONResponse(content=mask_list)
-    return hrnet_img, hrnet_json
+    # please check if multiple Response works
+    # hrnet_json = JSONResponse(content=json_bool_list)
+    return hrnet_img
 
 
 @app.post("/json_download/")
