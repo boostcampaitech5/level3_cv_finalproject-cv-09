@@ -110,18 +110,40 @@ def mask_color(mask,tuple):
             b_mask[indice] = cmap[k][2]
         return np.stack([b_mask, g_mask, r_mask], axis=2)
 
+def rle_encode(mask):
+    """
+    다차원 텐서를 RLE 인코딩하는 함수
+
+    :param tensor: 2차원 텐서 (height x width)
+    :return: RLE 인코딩된 문자열 리스트
+    """
+    mask_flatten = mask.flatten()
+    mask_flatten = np.concatenate([[0], mask_flatten, [0]])
+    runs = np.where(mask_flatten[1:] != mask_flatten[:-1])[0] + 1
+    runs[1::2] -= runs[::2]
+    rle = " ".join(str(x) for x in runs)
+    return rle
 
 if __name__=="__main__":
     img = Image.open("/opt/ml/level3_cv_finalproject-cv-09/MLflow/test.jpg")
 
-    bool_list = []
+    rle_list = []
     mask, mask_list = process_image_and_get_masks(img)
     
     for element in mask_list :
-        temp_dict = {element[0] : np.array(element[1]).tolist()}
-        bool_list.append(temp_dict)
+        temp = [element[0], rle_encode(np.array(element[1]))]
+        rle_list.append(temp)
+    
+    rle_list = json.dumps(rle_list)
+    print(rle_list)
+    # print(rle_list)
+    
+    # for element in mask_list :
+    #     temp_dict = {element[0] : np.array(element[1]).tolist()}
+    #     bool_list.append(temp_dict)
         
-    json_bool_list = json.dumps(bool_list)
+    # json_bool_list = json.dumps(bool_list)
+    
     # with open('json_bool.json', 'w') as f:
     #     json.dump(json_bool_list, f)
     # print(f"result shpae: {result.shape}, {result[12][540][1100]}")

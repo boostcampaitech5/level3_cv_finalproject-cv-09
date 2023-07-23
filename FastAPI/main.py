@@ -146,19 +146,18 @@ def mask_color(mask, tuple):
 def hrnet_inference(id, file_name):
     img = Image.open(f"{FOLDER_DIR}/{id}/original/{file_name}")
     mask, mask_list = process_image_and_get_masks(img)
-    bool_list = []
+    rle_list = []
     for element in mask_list :
-        temp_dict = {element[0] : np.array(element[1]).tolist()}
-        bool_list.append(temp_dict)
+        temp = [element[0], rle_encode(np.array(element[1]))]
+        rle_list.append(temp)
         
-    json_bool_list = json.dumps(bool_list)
     # 이미지 저장
     out = np.squeeze(mask, axis=0)
     out = mask_color(out,CustomKRLoadSegmentation)
     output_path = f'{FOLDER_DIR}/{id}/hrnet/{file_name}'
     cv2.imwrite(output_path, out)
 
-    return json_bool_list
+    return rle_list
 
 
 @torch.no_grad()
@@ -305,16 +304,15 @@ def segment_hrnet(path: str = Form(...)):
     path = change_path(path)
     id, file_name = path.split("/")
     
-    json_bool_list = hrnet_inference(id, file_name)
+    rle_list = hrnet_inference(id, file_name)
     # Need to be implemented : Remove \(backslash) from the json_bool_list
     hrnet_img = FileResponse(
         f"{FOLDER_DIR}/{id}/hrnet/{file_name}",
         media_type="image/jpg",
     )
-    # please check if JSONResponse code works
     # please check if multiple Response works
-    hrnet_json = JSONResponse(content=json_bool_list)
-    return hrnet_img, hrnet_json
+    # hrnet_json = JSONResponse(content=json_bool_list)
+    return hrnet_img
 
 
 @app.post("/json_download/")
