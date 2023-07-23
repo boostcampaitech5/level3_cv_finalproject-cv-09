@@ -306,13 +306,14 @@ def segment_hrnet(path: str = Form(...)):
     
     rle_list = hrnet_inference(id, file_name)
     json_rle_list = json.dumps(rle_list, indent=2)
-    hrnet_img = FileResponse(
-        f"{FOLDER_DIR}/{id}/hrnet/{file_name}",
-        media_type="image/jpg",
-    )
+    # hrnet_img = FileResponse(
+    #    f"{FOLDER_DIR}/{id}/hrnet/{file_name}",
+    #    media_type="image/jpg",
+    # )
     hrnet_json = JSONResponse(json_rle_list)
     # please check if multiple Response works
-    return hrnet_img, hrnet_json
+    # return hrnet_img, hrnet_json
+    return hrnet_json
 
 
 @app.post("/json_download/")
