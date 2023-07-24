@@ -250,9 +250,8 @@ async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
     for file in os.listdir(f"{FOLDER_DIR}/{id}/original/"):
         if file.endswith(".png"):
             path = f"{FOLDER_DIR}/{id}/original/{file.split('.')[0]}"
-            jpg_path = f"{path}.jpg"
             img = Image.open(f"{path}.png").convert("RGB")
-            img.save(jpg_path)
+            img.save(f"{path}.jpg")
             os.remove(f"{path}.png")
 
 
@@ -311,20 +310,18 @@ def segment_hrnet(path: str = Form(...)):
     #    media_type="image/jpg",
     # )
     hrnet_json = JSONResponse(json_rle_list)
-    # please check if multiple Response works
-    # return hrnet_img, hrnet_json
     return hrnet_json
 
 
-@app.post("/json_download/")
-def json_download(path: str = Form(...)):
-    id, file_name = path.split("/")
-    path = change_path(path)
-    file_name = file_name.split(".")[0]
-    output = {"test": [1, 2, 3, 4], "test2": [5, 6, 7, 8]}
-    with open(f"{FOLDER_DIR}/{id}/{file_name}.json", "w") as f:
-        json.dump(output, f, indent=2)
-    return output
+# @app.post("/json_download/")
+# def json_download(path: str = Form(...)):
+#     id, file_name = path.split("/")
+#     path = change_path(path)
+#     file_name = file_name.split(".")[0]
+#     output = {"test": [1, 2, 3, 4], "test2": [5, 6, 7, 8]}
+#     with open(f"{FOLDER_DIR}/{id}/{file_name}.json", "w") as f:
+#         json.dump(output, f, indent=2)
+#     return output
 
 
 @app.post("/remove/")
@@ -343,6 +340,7 @@ def remove(id: str = Form(...), annotated_data: dict = Form(...)):
     path_list.append(f"{FOLDER_DIR}/{id}/original")
     path_list.append(f"{FOLDER_DIR}/{id}/segment")
     path_list.append(f"{FOLDER_DIR}/{id}/zip")
+    path_list.append(f"{FOLDER_DIR}/{id}/hrnet")
     for path in path_list:
         if os.path.isdir(path):
             shutil.rmtree(path)
