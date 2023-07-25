@@ -128,9 +128,11 @@ class CustomKRLoadSegmentation(torch.utils.data.Dataset):
     class_names = [i.name for i in classes]
 
     cmap = []
+    label = []
     for i in classes:
         if i.id >=0 and i.id <19:
             cmap.append(i.color)
+            label.append(i.name)
 
     def __init__(self, data_dir, image_set="train", transform=None):
         self._ignore_index = [255]
