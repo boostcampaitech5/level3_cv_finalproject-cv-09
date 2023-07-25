@@ -5,6 +5,7 @@ import shutil
 import json
 import cv2
 import argparse
+import time
 from torchvision import transforms
 from io import BytesIO
 from hrnet.models.light import PLModel
@@ -47,10 +48,30 @@ async def startup_event():
     app.state.lang_sam = LangSAM(sam_type="vit_h", device=device)
 
 
+def make_dir(id):
+    path_list = [f"{FOLDER_DIR}/{id}/original",
+                 f"{FOLDER_DIR}/{id}/segment",
+                 f"{FOLDER_DIR}/{id}/zip",
+                 f"{FOLDER_DIR}/{id}/hrnet"]
+    for path in path_list:
+        if not os.path.isdir(path):
+            os.makedirs(path, exist_ok=True)
+
+
 def change_path(path):
     if path.endswith(".png"):
         path = str(path.split(".")[0] + ".jpg")
     return path
+
+
+def remove_dir(id):
+    path_list = [f"{FOLDER_DIR}/{id}/original",
+                 f"{FOLDER_DIR}/{id}/segment",
+                 f"{FOLDER_DIR}/{id}/zip",
+                 f"{FOLDER_DIR}/{id}/hrnet"]
+    for path in path_list:
+        if os.path.isdir(path):
+            shutil.rmtree(path)
 
 
 def rle_encode(mask):
@@ -89,7 +110,6 @@ def test(model, image):
             mask_list.append([CustomKRLoadSegmentation.label[i], result[i]])
             
     return outputs, mask_list
-
 
 
 def get_arg():
@@ -151,7 +171,7 @@ def hrnet_inference(id, file_name):
         temp = [element[0], rle_encode(np.array(element[1]))]
         rle_list.append(temp)
         
-    # 이미지 저장
+    # Save Image
     out = np.squeeze(mask, axis=0)
     out = mask_color(out,CustomKRLoadSegmentation)
     output_path = f'{FOLDER_DIR}/{id}/hrnet/{file_name}'
@@ -228,15 +248,8 @@ async def segment_dino(
 
 @app.post("/zip_upload/")
 async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
-    path_list = []
-    path_list.append(f"{FOLDER_DIR}/{id}/original")
-    path_list.append(f"{FOLDER_DIR}/{id}/segment")
-    path_list.append(f"{FOLDER_DIR}/{id}/zip")
-    path_list.append(f"{FOLDER_DIR}/{id}/hrnet")
-
-    for path in path_list:
-        if not os.path.isdir(path):
-            os.makedirs(path, exist_ok=True)
+    
+    make_dir(id)
 
     file_name = (files.filename).split(".")[0]
     content = await files.read()
@@ -246,6 +259,7 @@ async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
     with open(f"{ZIP_PATH}/{file_name}.zip", "wb") as f:
         f.write(content)
     ZipFile(f"{ZIP_PATH}/{file_name}.zip").extractall(f"data/{id}/original")
+    
     # Convert PNG to JPG
     for file in os.listdir(f"{FOLDER_DIR}/{id}/original/"):
         if file.endswith(".png"):
@@ -263,8 +277,8 @@ async def segment(path: str = Form(...)):
     img = Image.open(img_path).convert("RGB")
     fig, mask_dict = await segment_everything(img)
     output = fig.convert("RGB")
-    if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
-        os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
+    # if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
+    #     os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
     output.save(f"{FOLDER_DIR}/{id}/segment/{file_name}")
     # seg_img = FileResponse(
     #     f"{FOLDER_DIR}/{id}/segment/{file_name}",
@@ -285,8 +299,8 @@ async def segment_text(
     text_seg_dict, segmented_image = await segment_dino(
         threshold, threshold, img_path, text_prompt=text_prompt
     )
-    if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
-        os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
+    # if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
+    #     os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
     segmented_image.save(f"{FOLDER_DIR}/{id}/segment/dino_{file_name}")
     # mask_json = jsonable_encoder(text_seg_masks.tolist())
     # seg_dino_img = FileResponse(
@@ -336,11 +350,4 @@ def remove(id: str = Form(...), annotated_data: dict = Form(...)):
     <TO BE IMPLEMENTED>
     Send zipfile to airflow server using scp command
     """
-    path_list = []
-    path_list.append(f"{FOLDER_DIR}/{id}/original")
-    path_list.append(f"{FOLDER_DIR}/{id}/segment")
-    path_list.append(f"{FOLDER_DIR}/{id}/zip")
-    path_list.append(f"{FOLDER_DIR}/{id}/hrnet")
-    for path in path_list:
-        if os.path.isdir(path):
-            shutil.rmtree(path)
+    remove_dir(id)
