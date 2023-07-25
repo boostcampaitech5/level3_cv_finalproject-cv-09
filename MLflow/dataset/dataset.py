@@ -3,6 +3,7 @@ from collections import namedtuple
 import torch
 import numpy as np
 import os
+from dataset.augment import get_train_transform
 
 class CustomCityscapesSegmentation(torch.utils.data.Dataset):
     CityscapesClass = namedtuple('CityscapesClass', ['name', 'id', 'train_id', 'category', 'category_id',
@@ -103,7 +104,8 @@ class CustomKRLoadSegmentation(torch.utils.data.Dataset):
     KRLoadClass = namedtuple('KRLoadClass', ['name', 'id', 'color'])
 
     classes = [
-        KRLoadClass('background', 0, (0,0,0)),      # 배경
+        KRLoadClass('background', 255, (0,0,0)),      # 배경
+        KRLoadClass('traffic_light_controller',0,(0, 0, 255)),
         KRLoadClass('wheelchair', 1, (255, 0, 0)),  # 휠체어
         KRLoadClass('carrier', 2, (0, 64, 0)),     # 화물차
         KRLoadClass('stop', 3, (0 ,255, 255)),     # 정지선
@@ -130,13 +132,12 @@ class CustomKRLoadSegmentation(torch.utils.data.Dataset):
         if i.id >=0 and i.id <19:
             cmap.append(i.color)
 
-    def __init__(self, data_dir, image_set="train", transform=None, target_transform=None):
+    def __init__(self, data_dir, image_set="train", transform=None):
         self._ignore_index = [255]
         
         self.data_dir = data_dir
         self.image_set = image_set
         self.transform = transform
-        self.target_transform = target_transform
 
         self.path_png = os.path.join(data_dir,'imgs',image_set)
         self.path_mask = os.path.join(data_dir,'labels',image_set)
@@ -157,16 +158,57 @@ class CustomKRLoadSegmentation(torch.utils.data.Dataset):
     def __getitem__(self, index):
         image = Image.open(self.images[index]).convert('RGB')
         target = Image.open(self.targets[index])
-
+        
         image = np.array(image,dtype=np.uint8)
         target = np.array(target,dtype=np.uint8)
-
-        image = Image.fromarray(image)
-        target = Image.fromarray(target)
-
+        
         if self.transform is not None:
-            image = self.transform(image)
-        if self.target_transform is not None:
-            target = self.transform(target)
+            inputs = {"image": image, "mask": target} 
+            result = self.transform(**inputs)
             
+            image = result["image"]
+            target = result["mask"] 
+        
         return image, target
+    
+    
+    
+def get_data_loader(args):
+    
+    base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    train_transform = get_train_transform()
+    
+    test_transform = get_train_transform(train=False)
+    
+    train_data = CustomKRLoadSegmentation(
+        data_dir = os.path.join(base_path,'data','krload'),
+        image_set="train",
+        transform = train_transform,
+        )
+    
+    
+    val_data = CustomKRLoadSegmentation(
+        data_dir = os.path.join(base_path,'data','krload'),
+        image_set="val",
+        transform = test_transform,
+        )
+    
+    test_data = CustomKRLoadSegmentation(
+        data_dir = os.path.join(base_path,'data','krload'),
+        image_set='test',
+        transform = test_transform,
+    )
+    
+    train_loader = torch.utils.data.DataLoader(dataset = train_data,
+                                               batch_size = args.batch, shuffle = True, num_workers=4,
+                                               )
+    val_loader = torch.utils.data.DataLoader(dataset = val_data,
+                                                batch_size = args.val_batch, shuffle = False, num_workers=4,
+                                               )
+    
+    test_loader = torch.utils.data.DataLoader(dataset = test_data,
+                                                batch_size = args.val_batch, shuffle = False, num_workers=4,
+                                               )
+    
+    return train_loader, val_loader, test_loader
+    

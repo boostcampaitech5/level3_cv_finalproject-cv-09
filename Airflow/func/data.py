@@ -97,8 +97,8 @@ def make_folder(id):
     train_path = "/opt/ml/level3_cv_finalproject-cv-09/MLflow/data/krload"
 
     if not os.path.exists(os.path.join(train_path, "imgs", id)):
-        os.makedirs(os.path.join(train_path, "imgs", id))
-        os.makedirs(os.path.join(train_path, "labels", id))
+        os.makedirs(os.path.join(train_path, "imgs/train", id))
+        os.makedirs(os.path.join(train_path, "labels/train", id))
     else:
         return
 
@@ -106,8 +106,8 @@ def make_folder(id):
 #jpg랑 json 매칭되는지 확인후 파일 이동
 def check_if_match_and_send(id):
     tmp_path = "/opt/ml/level3_cv_finalproject-cv-09/MLflow/data/tmp"
-    dest_img_path = "/opt/ml/level3_cv_finalproject-cv-09/MLflow/data/krload/imgs"
-    dest_label_path = "/opt/ml/level3_cv_finalproject-cv-09/MLflow/data/krload/labels"
+    dest_img_path = "/opt/ml/level3_cv_finalproject-cv-09/MLflow/data/krload/imgs/train"
+    dest_label_path = "/opt/ml/level3_cv_finalproject-cv-09/MLflow/data/krload/labels/train"
 
     file_list = os.listdir(tmp_path)
 
@@ -137,10 +137,9 @@ def check_if_match_and_send(id):
             s_list.pop(0)
 
 
-
 #이미지파일 확장자 갖고오는 함수
 def get_ext(id):
-    image_path = "/opt/ml/level3_cv_finalproject-cv-09/MLflow/data/krload/imgs"
+    image_path = "/opt/ml/level3_cv_finalproject-cv-09/MLflow/data/krload/imgs/train"
 
     t_path = os.path.join(image_path, id)
 
@@ -149,7 +148,6 @@ def get_ext(id):
     name, ext = os.path.splitext(file_list[0])
 
     return ext
-
     
 
 #tmp폴더 비우기
@@ -184,17 +182,34 @@ def mask_color(mask,cmap):
         return np.stack([b_mask, g_mask, r_mask], axis=2)
 
 
+#이름같은 파일의 확장자 알아오기
+def find_files_with_same_name(folder_path, target_name):
+    # 해당 폴더 안의 모든 파일들을 가져옵니다.
+    for root, dirs, files in os.walk(folder_path):
+        for file in files:
+            # 파일의 확장자를 제외한 이름을 가져옵니다.
+            filename_without_extension = os.path.splitext(file)[0]
+
+            # 확장자 제외한 파일명과 대상 이름이 같은지 확인합니다.
+            if filename_without_extension == target_name:
+                # 같다면 해당 파일의 확장자를 출력합니다.
+                file_extension = os.path.splitext(file)[1]
+                return file_extension
 
 
 #json파일 이미지로 바꿔서 저장
-def change_json_to_image(id, ext):
-    dest_label_path = "/opt/ml/level3_cv_finalproject-cv-09/MLflow/data/krload/labels"
+def change_json_to_image(id):
+    dest_label_path = "/opt/ml/level3_cv_finalproject-cv-09/MLflow/data/krload/labels/train"
+    dest_image_path = "/opt/ml/level3_cv_finalproject-cv-09/MLflow/data/krload/imgs/train"
 
     id_label_path = os.path.join(dest_label_path, id)
+    id_image_path = os.path.join(dest_image_path, id)
 
     file_list = os.listdir(id_label_path)
 
-    for file in file_list:
+    s_list = sorted(file_list)
+
+    for file in s_list:
         file_path = os.path.join(id_label_path, file)
 
         with open(file_path, 'r') as json_file:
@@ -216,20 +231,18 @@ def change_json_to_image(id, ext):
                 raw_mask = raw_mask * target_id
 
                 image = image + raw_mask
+
+            file_name = os.path.splitext(file)[0]
             
-            file_path = file_path.replace(".json",ext)
+            ext = find_files_with_same_name(id_image_path, file_name)
+            
+            file_path = file_path.replace(".json", ext)
 
             # image = mask_color(image, cmap)
 
             im = Image.fromarray(image)
 
             im.save(file_path)
-
-
-
-
-        
-        
 
 
 if __name__=='__main__':
@@ -251,21 +264,8 @@ if __name__=='__main__':
 
             check_if_match_and_send(id)
 
-            ext = get_ext(id)
-
-            change_json_to_image(id, ext)
+            change_json_to_image(id)
 
             refresh_tmp()
 
         refresh_new_data()
-
-
-
-
-
-
-
-            
-
-
-

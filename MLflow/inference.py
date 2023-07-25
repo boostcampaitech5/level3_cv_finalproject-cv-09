@@ -9,7 +9,7 @@ import torch
 from models.light import PLModel
 import torch.nn.functional as F
 import cv2
-from dataset import CustomCityscapesSegmentation
+from dataset.dataset import CustomCityscapesSegmentation
 from torchvision.transforms import ToTensor, Normalize
 
 # def encode_mask_to_rle(mask):

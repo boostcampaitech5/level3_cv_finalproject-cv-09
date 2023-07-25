@@ -10,14 +10,16 @@ class PLModel(pl.LightningModule):
         self.net = HRNet_W48_OCR(args)
         self.args = args
         # self.train_score = torchmetrics.Dice(multiclass=True,num_classes=args.num_classes)
-        self.train_score = torchmetrics.JaccardIndex(task='multiclass',num_classes=args.num_classes)
-        self.val_score = torchmetrics.JaccardIndex(task='multiclass',num_classes=args.num_classes,average='none')
-        self.test_score = torchmetrics.JaccardIndex(task='multiclass',num_classes=args.num_classes,average='none')
+        # self.val_score = torchmetrics.Dice(multiclass=True,num_classes=args.num_classes)
+        # self.test_score = torchmetrics.Dice(multiclass=True,num_classes=args.num_classes)
+        self.train_score = torchmetrics.JaccardIndex(task='multiclass',num_classes=args.num_classes,ignore_index=255)
+        self.val_score = torchmetrics.JaccardIndex(task='multiclass',num_classes=args.num_classes,average='none',ignore_index=255)
+        self.test_score = torchmetrics.JaccardIndex(task='multiclass',num_classes=args.num_classes,average='none',ignore_index=255)
         
         self.training_step_outputs = []
         self.validation_step_outputs = []
 
-        if args.pretrained:
+        if args.pretrained != 'None':
             self.load_model(args.pretrained)
     
     def load_model(self,path):
@@ -32,10 +34,11 @@ class PLModel(pl.LightningModule):
         x, y = batch
         y = y.squeeze(1).type(dtype=torch.long)
         logits = self.forward(x)
-        loss = nn.functional.cross_entropy(logits,y)
-        pred = logits.argmax(dim=1)
+        pred = torch.sigmoid(logits)
+        loss = nn.functional.cross_entropy(pred,y,ignore_index=255)
+        # pred = pred.argmax(dim=1)
         
-        self.train_score(pred.detach(),y.detach())
+        self.train_score(pred,y)
         self.training_step_outputs.append(loss.detach().cpu())
         
         return loss
@@ -54,10 +57,10 @@ class PLModel(pl.LightningModule):
         x, y = batch
         y = y.squeeze(1).type(torch.long)
         logits = self.forward(x)
-        loss = nn.functional.cross_entropy(logits,y)
-        pred = logits.argmax(dim=1)
+        pred = torch.sigmoid(logits)
+        loss = nn.functional.cross_entropy(pred,y,ignore_index=255)
         
-        self.val_score(pred.detach(),y.detach())
+        self.val_score(pred,y)
         self.validation_step_outputs.append(loss.detach().cpu())
         
         return loss
@@ -78,9 +81,10 @@ class PLModel(pl.LightningModule):
         x, y = batch
         y = y.squeeze(1).type(torch.long)
         logits = self.forward(x)
-        pred = logits.argmax(dim=1)
+        pred = torch.sigmoid(logits)
+        # pred = logits.argmax(dim=1)
         
-        self.test_score(pred.detach(),y.detach())
+        self.test_score(pred,y)
         
     def on_test_epoch_end(self) -> None:
         score = self.test_score.compute()
@@ -90,4 +94,5 @@ class PLModel(pl.LightningModule):
         self.test_score.reset()
         
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(),lr=self.args.lr)
+        return torch.optim.SGD(self.parameters(),
+                               lr=self.args.lr,momentum=0.9, weight_decay=5e-4)
