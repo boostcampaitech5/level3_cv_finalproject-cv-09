@@ -277,8 +277,6 @@ async def segment(path: str = Form(...)):
     img = Image.open(img_path).convert("RGB")
     fig, mask_dict = await segment_everything(img)
     output = fig.convert("RGB")
-    # if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
-    #     os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
     output.save(f"{FOLDER_DIR}/{id}/segment/{file_name}")
     # seg_img = FileResponse(
     #     f"{FOLDER_DIR}/{id}/segment/{file_name}",
@@ -299,8 +297,6 @@ async def segment_text(
     text_seg_dict, segmented_image = await segment_dino(
         threshold, threshold, img_path, text_prompt=text_prompt
     )
-    # if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
-    #     os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
     segmented_image.save(f"{FOLDER_DIR}/{id}/segment/dino_{file_name}")
     # mask_json = jsonable_encoder(text_seg_masks.tolist())
     # seg_dino_img = FileResponse(
