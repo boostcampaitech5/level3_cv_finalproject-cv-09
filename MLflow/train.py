@@ -18,7 +18,7 @@ def get_arg():
     parser = argparse.ArgumentParser(description="mlflow-pytorch test")
     parser.add_argument("--batch",type=int, default=8)
     parser.add_argument("--val_batch",type=int, default=8)
-    parser.add_argument("--lr",type=float, default=1e-3)
+    parser.add_argument("--lr",type=float, default=1e-4)
     parser.add_argument("--epochs",type=int,default=2)
     parser.add_argument("--accelerator", choices=['cpu','gpu','auto'],default='gpu')
     parser.add_argument("--precision", choices=['32','16'],default='16')
@@ -29,6 +29,7 @@ def get_arg():
     parser.add_argument("--backbone", type=str, default='hrnet48')
     parser.add_argument("--pretrained", type=str, default='/opt/ml/level3_cv_finalproject-cv-09/MLflow/checkpoint/origin.pth')
     parser.add_argument("--experiment_name",type=str, default='krload')
+    parser.add_argument('--cutmix', action='store_true', help="use cutmix")
     
     args = parser.parse_args()
     return args
