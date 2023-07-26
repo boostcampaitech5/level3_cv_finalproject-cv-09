@@ -2,11 +2,8 @@ import os
 import torch
 import numpy as np
 import shutil
-import json
-import cv2
-import argparse
+from datetime import datetime
 from torchvision import transforms
-from io import BytesIO
 from hrnet.models.light import PLModel
 from hrnet.dataset import CustomKRLoadSegmentation
 from torchvision.transforms import ToTensor, Normalize
@@ -15,7 +12,6 @@ from utils.tools_gradio import fast_process
 from utils.tools import box_prompt, format_results, point_prompt
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import FileResponse, JSONResponse
-from fastapi.encoders import jsonable_encoder
 from PIL import Image
 from mobile_sam import SamAutomaticMaskGenerator, SamPredictor, sam_model_registry
 from collections import namedtuple
@@ -130,18 +126,18 @@ def process_image_and_get_masks(img):
     return masks
 
 
-def mask_color(mask, tuple):
-    cmap = tuple.cmap
-    if isinstance(mask, np.ndarray):
-        r_mask = np.zeros_like(mask, dtype=np.uint8)
-        g_mask = np.zeros_like(mask, dtype=np.uint8)
-        b_mask = np.zeros_like(mask, dtype=np.uint8)
-        for k in range(len(cmap)):
-            indice = mask == k
-            r_mask[indice] = cmap[k][0]
-            g_mask[indice] = cmap[k][1]
-            b_mask[indice] = cmap[k][2]
-        return np.stack([b_mask, g_mask, r_mask], axis=2)
+#def mask_color(mask, tuple):
+#    cmap = tuple.cmap
+#    if isinstance(mask, np.ndarray):
+#        r_mask = np.zeros_like(mask, dtype=np.uint8)
+#        g_mask = np.zeros_like(mask, dtype=np.uint8)
+#        b_mask = np.zeros_like(mask, dtype=np.uint8)
+#        for k in range(len(cmap)):
+#            indice = mask == k
+#            r_mask[indice] = cmap[k][0]
+#            g_mask[indice] = cmap[k][1]
+#            b_mask[indice] = cmap[k][2]
+#        return np.stack([b_mask, g_mask, r_mask], axis=2)
 
 
 def hrnet_inference(id, file_name):
@@ -153,10 +149,10 @@ def hrnet_inference(id, file_name):
         mask_dict["masks"][element[0]] = rle_encode(np.array(element[1]))
 
     # 이미지 저장
-    out = np.squeeze(mask, axis=0)
-    out = mask_color(out, CustomKRLoadSegmentation)
-    output_path = f"{FOLDER_DIR}/{id}/hrnet/{file_name}"
-    cv2.imwrite(output_path, out)
+    # out = np.squeeze(mask, axis=0)
+    # out = mask_color(out, CustomKRLoadSegmentation)
+    # output_path = f"{FOLDER_DIR}/{id}/hrnet/{file_name}"
+    # cv2.imwrite(output_path, out)
 
     return mask_dict
 
@@ -347,38 +343,40 @@ def segment_hrnet(path: str = Form(...)):
     #    media_type="image/jpg",
     # )
     hrnet_json = JSONResponse(content=rle_dict)
-    # please check if multiple Response works
-    # return hrnet_img, hrnet_json
     return hrnet_json
 
 
-@app.post("/json_download/")
-def json_download(path: str = Form(...)):
-    id, file_name = path.split("/")
-    path = change_path(path)
-    file_name = file_name.split(".")[0]
-    output = {"test": [1, 2, 3, 4], "test2": [5, 6, 7, 8]}
-    with open(f"{FOLDER_DIR}/{id}/{file_name}.json", "w") as f:
-        json.dump(output, f, indent=2)
-    return output
+@app.post("/json_upload/")
+async def json_upload(id: str = Form(...), files: UploadFile = File(...)):
+    file_name = (files.filename).split(".")[0]
+    content = await files.read()
+    print(content)
+    ZIP_PATH = f"{FOLDER_DIR}/{id}/zip"
+
+    with open(f"{ZIP_PATH}/{file_name}.zip", "wb") as f:
+        f.write(content)
+    ZipFile(f"{ZIP_PATH}/{file_name}.zip").extractall(f"data/{id}/original")
 
 
 @app.post("/remove/")
-def remove(id: str = Form(...), annotated_data: dict = Form(...)):
+# def remove(id: str = Form(...), annotated_data: dict = Form(...)):
+def remove(id: str = Form(...)):
     if id == "":
         return 0
     zip_file = ZipFile(f"{FOLDER_DIR}/{id}/{id}.zip", "w")
     for file in os.listdir(f"{FOLDER_DIR}/{id}/original"):
         zip_file.write(os.path.join(f"{FOLDER_DIR}/{id}/original", file))
     zip_file.close()
-    """
-    <TO BE IMPLEMENTED>
+    '''
     Send zipfile to airflow server using scp command
-    """
-    path_list = []
-    path_list.append(f"{FOLDER_DIR}/{id}/original")
-    path_list.append(f"{FOLDER_DIR}/{id}/segment")
-    path_list.append(f"{FOLDER_DIR}/{id}/zip")
-    for path in path_list:
-        if os.path.isdir(path):
-            shutil.rmtree(path)
+    scp_key file is vital
+    Following terminal command was implemented properly :
+    scp -P 2251 -i ~/level3_cv_finalproject-cv-09/scp_key FastAPI/data/a/zip/insta.zip root@118.67.132.218:/opt/ml/
+    '''
+    # now = datetime.now().strftime(f"{id}%Y%m%d%H%M%S")
+    # Implement SCP
+    os.system(f"scp -P 2251 -i ~/level3_cv_finalproject-cv-09/scp_key {FOLDER_DIR}/{id}/{id}.zip root@118.67.132.218:/opt/ml/level3_cv_finalproject-cv-09/MLflow/data/new_data")
+    
+    path = f"{FOLDER_DIR}/{id}"
+    if os.path.isdir(path):
+        shutil.rmtree(path)
