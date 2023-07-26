@@ -196,11 +196,13 @@ def json_upload(id):
 def finish(id):
     data = {"id": str(id)}
     shutil.make_archive(f"data/{id}/annotation", "zip", f"data/annotations/{id}")
-    
+
     with open(f"data/{id}/annotation.zip", "rb") as f:
         files = {"files": f}
-        upload_res = requests.post("http://127.0.0.1:30008/json_upload/", data=data, files=files)
-        
+        upload_res = requests.post(
+            "http://127.0.0.1:30008/json_upload/", data=data, files=files
+        )
+
     remove_res = requests.post("http://127.0.0.1:30008/remove/", data=data)
     return f"data/{id}/annotation.zip"
 
