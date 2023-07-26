@@ -12,15 +12,18 @@ from hrnet.dataset import CustomKRLoadSegmentation
 from torchvision.transforms import ToTensor, Normalize
 from zipfile import ZipFile
 from utils.tools_gradio import fast_process
+from utils.tools import box_prompt, format_results, point_prompt
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.encoders import jsonable_encoder
 from PIL import Image
 from mobile_sam import SamAutomaticMaskGenerator, SamPredictor, sam_model_registry
-from lang_segment_anything.lang_sam import LangSAM
-from lang_segment_anything.lang_sam import SAM_MODELS
-from lang_segment_anything.lang_sam.utils import draw_image
-from lang_segment_anything.lang_sam.utils import load_image
+from collections import namedtuple
+
+# from lang_segment_anything.lang_sam import LangSAM
+# from lang_segment_anything.lang_sam import SAM_MODELS
+# from lang_segment_anything.lang_sam.utils import draw_image
+# from lang_segment_anything.lang_sam.utils import load_image
 
 
 FOLDER_DIR = "data"
@@ -44,7 +47,7 @@ async def startup_event():
     app.state.predictor = SamPredictor(mobile_sam)
 
     # Lang-SAM load
-    app.state.lang_sam = LangSAM(sam_type="vit_h", device=device)
+    # app.state.lang_sam = LangSAM(sam_type="vit_h", device=device)
 
 
 def change_path(path):
@@ -73,10 +76,10 @@ def test(model, image):
     model = model.cuda()
     model.eval()
     mask_list = []
-    
+
     with torch.no_grad():
         n_class = args.num_classes
-        image = image.cuda()    
+        image = image.cuda()
         logits = model(image)
 
         # restore original size
@@ -87,28 +90,26 @@ def test(model, image):
         result = outputs == np.arange(logits.shape[1])[:, np.newaxis, np.newaxis]
         for i in range(n_class):
             mask_list.append([CustomKRLoadSegmentation.label[i], result[i]])
-            
+
     return outputs, mask_list
 
 
-
 def get_arg():
-    parser = argparse.ArgumentParser(description="mlflow-pytorch test")
-    parser.add_argument("--accelerator", choices=["cpu", "gpu", "auto"], default="gpu")
-    parser.add_argument("--precision", choices=["32", "16"], default="16")
-    parser.add_argument("--regist_name", type=str, default="register_model")
-    parser.add_argument("--bn_type", type=str, default="torchbn")
-    parser.add_argument("--num_classes", type=int, default=19)
-    parser.add_argument("--backbone", type=str, default="hrnet48")
-    parser.add_argument(
-        "--pretrained",
-        type=str,
-        default="/opt/ml/level3_cv_finalproject-cv-09/MLflow/checkpoint/best.pth",
-    )
-    parser.add_argument("--experiment_name", type=str, default="mlflow_ex")
+    parser_dict = {
+        "accelerator": "gpu",
+        "precision": "16",
+        "regist_name": "register_model",
+        "bn_type": "torchbn",
+        "num_classes": 19,
+        "backbone": "hrnet48",
+        "pretrained": "weights/best.pth",
+    }
+    ParserDict = namedtuple("ParserDict", parser_dict.keys())
 
-    args = parser.parse_args()
-    return args
+    # 기존의 dictionary를 named tuple로 변환합니다.
+    parser_dict = ParserDict(**parser_dict)
+
+    return parser_dict
 
 
 def process_image_and_get_masks(img):
@@ -131,12 +132,12 @@ def process_image_and_get_masks(img):
 
 def mask_color(mask, tuple):
     cmap = tuple.cmap
-    if isinstance(mask,np.ndarray):
-        r_mask = np.zeros_like(mask,dtype=np.uint8)
-        g_mask = np.zeros_like(mask,dtype=np.uint8)
-        b_mask = np.zeros_like(mask,dtype=np.uint8)
+    if isinstance(mask, np.ndarray):
+        r_mask = np.zeros_like(mask, dtype=np.uint8)
+        g_mask = np.zeros_like(mask, dtype=np.uint8)
+        b_mask = np.zeros_like(mask, dtype=np.uint8)
         for k in range(len(cmap)):
-            indice = mask==k
+            indice = mask == k
             r_mask[indice] = cmap[k][0]
             g_mask[indice] = cmap[k][1]
             b_mask[indice] = cmap[k][2]
@@ -146,18 +147,55 @@ def mask_color(mask, tuple):
 def hrnet_inference(id, file_name):
     img = Image.open(f"{FOLDER_DIR}/{id}/original/{file_name}")
     mask, mask_list = process_image_and_get_masks(img)
-    rle_list = []
-    for element in mask_list :
-        temp = [element[0], rle_encode(np.array(element[1]))]
-        rle_list.append(temp)
-        
+    mask_dict = {"masks": dict(), "size": [img.height, img.width]}
+
+    for element in mask_list:
+        mask_dict["masks"][element[0]] = rle_encode(np.array(element[1]))
+
     # 이미지 저장
     out = np.squeeze(mask, axis=0)
-    out = mask_color(out,CustomKRLoadSegmentation)
-    output_path = f'{FOLDER_DIR}/{id}/hrnet/{file_name}'
+    out = mask_color(out, CustomKRLoadSegmentation)
+    output_path = f"{FOLDER_DIR}/{id}/hrnet/{file_name}"
     cv2.imwrite(output_path, out)
 
-    return rle_list
+    return mask_dict
+
+
+@torch.no_grad()
+def segment_with_points(image, global_points, global_point_label, input_size=1024):
+    input_size = int(input_size)
+    w, h = image.size
+    scale = input_size / max(w, h)
+    new_w = int(w * scale)
+    new_h = int(h * scale)
+    image = image.resize((new_w, new_h))
+
+    scaled_points = np.array(
+        [int(int(point) * scale) for point in global_points]
+    ).reshape(-1, 2)
+    scaled_point_label = np.array(
+        [True if x == "True" else False for x in global_point_label]
+    )
+
+    if scaled_points.size == 0 and scaled_point_label.size == 0:
+        print("No points selected")
+        return image, image
+
+    nd_image = np.array(image)
+    app.state.predictor.set_image(nd_image)
+    masks, scores, logits = app.state.predictor.predict(
+        point_coords=scaled_points,
+        point_labels=scaled_point_label,
+        multimask_output=True,
+    )
+
+    results = format_results(masks, scores, logits, 0)
+
+    annotations, _ = point_prompt(
+        results, scaled_points, scaled_point_label, new_h, new_w
+    )
+    annotations = np.array(annotations)
+    return annotations
 
 
 @torch.no_grad()
@@ -179,10 +217,10 @@ async def segment_everything(
 
     nd_image = np.array(image)
     annotations = app.state.mask_generator.generate(nd_image)
-    mask_dict = {"masks" : list(), "size": [new_h, new_w]}
+    mask_dict = {"masks": list(), "size": [new_h, new_w]}
     for idx, annotation in enumerate(annotations):
-        rle_mask = rle_encode(annotation['segmentation'])
-        mask_dict['masks'].append(rle_mask)
+        rle_mask = rle_encode(annotation["segmentation"])
+        mask_dict["masks"].append(rle_mask)
     fig = fast_process(
         annotations=annotations,
         image=image,
@@ -196,34 +234,34 @@ async def segment_everything(
     return fig, mask_dict
 
 
-@torch.no_grad()
-async def segment_dino(
-    box_threshold=0.7, text_threshold=0.7, image_path="", text_prompt="sky"
-):
-    image_pil = load_image(image_path)  # width x height
-    masks, boxes, phrases, logits = app.state.lang_sam.predict(
-        image_pil, text_prompt, box_threshold, text_threshold
-    )  # channel x height x width
-    labels = [f"{phrase} {logit:.2f}" for phrase, logit in zip(phrases, logits)]
-    mask_dict = {"masks" : dict(), "size": [image_pil.height, image_pil.width]}
-    print(mask_dict['size'])
+# @torch.no_grad()
+# async def segment_dino(
+#     box_threshold=0.7, text_threshold=0.7, image_path="", text_prompt="sky"
+# ):
+#     image_pil = load_image(image_path)  # width x height
+#     masks, boxes, phrases, logits = app.state.lang_sam.predict(
+#         image_pil, text_prompt, box_threshold, text_threshold
+#     )  # channel x height x width
+#     labels = [f"{phrase} {logit:.2f}" for phrase, logit in zip(phrases, logits)]
+#     mask_dict = {"masks": dict(), "size": [image_pil.height, image_pil.width]}
+#     print(mask_dict["size"])
 
-    for idx, label in enumerate(labels):
-        label, logit = label.split()
-        if label in mask_dict["masks"]:
-            mask1 = np.array(mask_dict["masks"][label])
-            mask2 = np.array(masks[idx])
-            or_mask = np.logical_or(mask1, mask2)
-            mask_dict["masks"][label] = torch.tensor(or_mask)
-        else:
-            mask_dict["masks"][label] = torch.tensor(masks[idx])
-    for label, mask in mask_dict["masks"].items():
-        rle_mask = rle_encode(mask)
-        mask_dict["masks"][label] = rle_mask
-    image_array = np.asarray(image_pil)
-    image = draw_image(image_array, masks, boxes, labels)
-    image = Image.fromarray(np.uint8(image)).convert("RGB")
-    return mask_dict, image
+#     for idx, label in enumerate(labels):
+#         label, logit = label.split()
+#         if label in mask_dict["masks"]:
+#             mask1 = np.array(mask_dict["masks"][label])
+#             mask2 = np.array(masks[idx])
+#             or_mask = np.logical_or(mask1, mask2)
+#             mask_dict["masks"][label] = torch.tensor(or_mask)
+#         else:
+#             mask_dict["masks"][label] = torch.tensor(masks[idx])
+#     for label, mask in mask_dict["masks"].items():
+#         rle_mask = rle_encode(mask)
+#         mask_dict["masks"][label] = rle_mask
+#     image_array = np.asarray(image_pil)
+#     image = draw_image(image_array, masks, boxes, labels)
+#     image = Image.fromarray(np.uint8(image)).convert("RGB")
+#     return mask_dict, image
 
 
 @app.post("/zip_upload/")
@@ -257,45 +295,43 @@ async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
 
 
 @app.post("/segment/")
-async def segment(path: str = Form(...)):
-    path = change_path(path)
-    id, file_name = path.split("/")
-    img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
-    img = Image.open(img_path).convert("RGB")
-    fig, mask_dict = await segment_everything(img)
-    output = fig.convert("RGB")
-    if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
-        os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
-    output.save(f"{FOLDER_DIR}/{id}/segment/{file_name}")
-    # seg_img = FileResponse(
-    #     f"{FOLDER_DIR}/{id}/segment/{file_name}",
-    #     media_type="image/jpg",
-    # )
-    output_reponse = JSONResponse(content=mask_dict)
-    return output_reponse
-
-
-@app.post("/segment_text/")
-async def segment_text(
-    path: str = Form(...), text_prompt: str = Form(...), threshold: float = Form(...)
+async def segment(
+    path: str = Form(...),
+    global_points: list = Form(...),
+    global_point_label: list = Form(...),
 ):
     path = change_path(path)
     id, file_name = path.split("/")
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
-    text_prompt = text_prompt.replace(",", ".")
-    text_seg_dict, segmented_image = await segment_dino(
-        threshold, threshold, img_path, text_prompt=text_prompt
+    img = Image.open(img_path).convert("RGB")
+    mask_array = segment_with_points(
+        img, global_points=global_points, global_point_label=global_point_label
     )
-    if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
-        os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
-    segmented_image.save(f"{FOLDER_DIR}/{id}/segment/dino_{file_name}")
-    # mask_json = jsonable_encoder(text_seg_masks.tolist())
-    # seg_dino_img = FileResponse(
-    #     f"{FOLDER_DIR}/{id}/segment/dino_{file_name}",
-    #     media_type="image/jpg",
-    # )
-    output_reponse = JSONResponse(content=text_seg_dict)
+    output_reponse = JSONResponse(content=mask_array.tolist())
     return output_reponse
+
+
+# @app.post("/segment_text/")
+# async def segment_text(
+#     path: str = Form(...), text_prompt: str = Form(...), threshold: float = Form(...)
+# ):
+#     path = change_path(path)
+#     id, file_name = path.split("/")
+#     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
+#     text_prompt = text_prompt.replace(",", ".")
+#     text_seg_dict, segmented_image = await segment_dino(
+#         threshold, threshold, img_path, text_prompt=text_prompt
+#     )
+#     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
+#         os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
+#     segmented_image.save(f"{FOLDER_DIR}/{id}/segment/dino_{file_name}")
+#     # mask_json = jsonable_encoder(text_seg_masks.tolist())
+#     # seg_dino_img = FileResponse(
+#     #     f"{FOLDER_DIR}/{id}/segment/dino_{file_name}",
+#     #     media_type="image/jpg",
+#     # )
+#     output_reponse = JSONResponse(content=text_seg_dict)
+#     return output_reponse
 
 
 # Send data from FastAPI server to FE server
@@ -303,14 +339,14 @@ async def segment_text(
 def segment_hrnet(path: str = Form(...)):
     path = change_path(path)
     id, file_name = path.split("/")
-    
-    rle_list = hrnet_inference(id, file_name)
-    json_rle_list = json.dumps(rle_list, indent=2)
+
+    rle_dict = hrnet_inference(id, file_name)
+
     # hrnet_img = FileResponse(
     #    f"{FOLDER_DIR}/{id}/hrnet/{file_name}",
     #    media_type="image/jpg",
     # )
-    hrnet_json = JSONResponse(json_rle_list)
+    hrnet_json = JSONResponse(content=rle_dict)
     # please check if multiple Response works
     # return hrnet_img, hrnet_json
     return hrnet_json
