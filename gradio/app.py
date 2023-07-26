@@ -1,14 +1,13 @@
 import os
 import gradio as gr
 import numpy as np
-from PIL import Image
-from zipfile import ZipFile
-import requests
-from collections import deque
 import shutil
 import torch
 import json
-
+import requests
+from PIL import Image
+from zipfile import ZipFile
+from collections import deque
 from torchvision.utils import draw_segmentation_masks
 
 
@@ -181,10 +180,10 @@ def segment_request(id, threshold, img_path, text_prompt):
     return hrnet_request(id, img_path)
 
 
-def json_download(id, img_path):
-    data = {"path": os.path.join(str(id), str(img_path))}
-    res = requests.post("http://127.0.0.1:40001/json_download/", data=data)
-    return res.content
+# def json_download(id, img_path):
+#     data = {"path": os.path.join(str(id), str(img_path))}
+#     res = requests.post("http://127.0.0.1:40001/json_download/", data=data)
+#     return res.content
 
 
 def json_upload(id, json_zip):
