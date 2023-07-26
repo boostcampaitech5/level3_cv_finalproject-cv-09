@@ -126,7 +126,7 @@ def process_image_and_get_masks(img):
     return masks
 
 
-#def mask_color(mask, tuple):
+# def mask_color(mask, tuple):
 #    cmap = tuple.cmap
 #    if isinstance(mask, np.ndarray):
 #        r_mask = np.zeros_like(mask, dtype=np.uint8)
@@ -367,16 +367,18 @@ def remove(id: str = Form(...)):
     for file in os.listdir(f"{FOLDER_DIR}/{id}/original"):
         zip_file.write(os.path.join(f"{FOLDER_DIR}/{id}/original", file))
     zip_file.close()
-    '''
+    """
     Send zipfile to airflow server using scp command
     scp_key file is vital
     Following terminal command was implemented properly :
     scp -P 2251 -i ~/level3_cv_finalproject-cv-09/scp_key FastAPI/data/a/zip/insta.zip root@118.67.132.218:/opt/ml/
-    '''
+    """
     # now = datetime.now().strftime(f"{id}%Y%m%d%H%M%S")
     # Implement SCP
-    os.system(f"scp -P 2251 -i ~/level3_cv_finalproject-cv-09/scp_key {FOLDER_DIR}/{id}/{id}.zip root@118.67.132.218:/opt/ml/level3_cv_finalproject-cv-09/MLflow/data/new_data")
-    
+    os.system(
+        f"scp -P 2251 -i ~/level3_cv_finalproject-cv-09/scp_key {FOLDER_DIR}/{id}/{id}.zip root@118.67.132.218:/opt/ml/level3_cv_finalproject-cv-09/MLflow/data/new_data"
+    )
+
     path = f"{FOLDER_DIR}/{id}"
     if os.path.isdir(path):
         shutil.rmtree(path)
