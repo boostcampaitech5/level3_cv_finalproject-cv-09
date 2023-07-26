@@ -1,26 +1,23 @@
 import os
 import gradio as gr
 import numpy as np
-import io
-from PIL import Image
-from zipfile import ZipFile
-import requests
-from collections import deque
 import shutil
 import torch
 import json
-import sys
+import requests
+from PIL import Image
+from zipfile import ZipFile
+from collections import deque
 from torchvision.utils import draw_segmentation_masks
-import time
-import asyncio
+
 
 save_annotate = []
 hrnet_label = [
     "",
-    "background,wheelchair,truck,traffic_sign,traffic_light,stroller,stop,scooter,pole,person,motorcycle,dog,cat,carrier,car,bus,bollard,bicycle,barricade",
+    "background,traffic_light_controller,wheelchair,truck,traffic_sign,traffic_light,stroller,stop,scooter,pole,person,motorcycle,dog,cat,carrier,car,bus,bollard,bicycle,barricade",
 ]
 classes = {
-    "human": [0, (0, 0, 0)],  # 배경
+    "traffic_light_controller": [0, (0, 0, 255)],
     "wheelchair": [1, (255, 0, 0)],  # 휠체어
     "carrier": [2, (0, 64, 0)],  # 화물차
     "stop": [3, (0, 255, 255)],  # 정지선
@@ -39,16 +36,41 @@ classes = {
     "bollard": [16, (64, 0, 64)],  # 인도 블럭 바리케이드 비슷한거
     "motorcycle": [17, (128, 0, 255)],  # 오토바이
     "bicycle": [18, (0, 64, 64)],  # 자전거
+    "background": [255, (0, 0, 0)],  # 배경
 }
+color_dict = {
+    "background": "#ffffff",
+    "traffic_light_controller": "#0000ff",
+    "wheelchair": "#ff0000",
+    "carrier": "#004000",
+    "stop": "#00ffff",
+    "cat": "#400000",
+    "pole": "#008080",
+    "traffic_light": "#ff00ff",
+    "traffic_sign": "#0000ff",
+    "stroller": "#ffff00",
+    "dog": "#ff80ff",
+    "barricade": "#00c000",
+    "person": "#800080",
+    "scooter": "#808000",
+    "car": "#000040",
+    "truck": "#00ff00",
+    "bus": "#404000",
+    "bollard": "#400040",
+    "motorcycle": "#8000ff",
+    "bicycle": "#004040",
+}
+global_points = []
+global_point_label = []
 
 
 def draw_image(image, masks, alpha=0.4):
     image = torch.from_numpy(image).permute(2, 0, 1)
     if len(masks) > 0:
         image = draw_segmentation_masks(
-            image, masks=masks, colors=["cyan"] * len(masks), alpha=alpha
+            image, masks=masks, colors=list(color_dict.values()), alpha=alpha
         )
-    return image.numpy().transpose(1, 2, 0)
+    return Image.fromarray(image.numpy().transpose(1, 2, 0))
 
 
 # RLE 디코딩 함수
@@ -63,14 +85,23 @@ def rle_decode(mask_rle, shape):
     return img.reshape(shape)
 
 
-def zip_upload(is_drive, img_zip, id):
+def rle_encode(mask):
+    mask_flatten = mask.flatten()
+    mask_flatten = np.concatenate([[0], mask_flatten, [0]])
+    runs = np.where(mask_flatten[1:] != mask_flatten[:-1])[0] + 1
+    runs[1::2] -= runs[::2]
+    rle = " ".join(str(x) for x in runs)
+    return rle
+
+
+def zip_upload(is_walking, img_zip, id):
     with ZipFile(img_zip.name, "r") as f:
         f.extractall(f"data/{id}")
     data = {"id": str(id)}
     with open(img_zip.name, "rb") as f:
         files = {"files": f}
         res = requests.post(
-            "http://118.67.142.203:30008/zip_upload/",
+            "http://127.0.0.1:30008/zip_upload/",
             data=data,
             files=files,
         )
@@ -100,35 +131,27 @@ def viz_img(id, path):
 
 def segment(id, img_path):
     data = {"path": os.path.join(str(id), str(img_path))}
-    seg = requests.post("http://118.67.142.203:30008/segment/", data=data)
+    seg = requests.post("http://127.0.0.1:30008/segment/", data=data)
     mask_dict = json.loads(seg.content)
-    sam_masks = list()
-    for idx, mask in enumerate(mask_dict["masks"]):
-        seg_mask = rle_decode(mask, mask_dict['size'])
-        sam_masks.append(np.array(seg_mask))
-    print(np.array(sam_masks[0]).shape)
-    print(len(sam_masks))
-    return sam_masks
-    # return Image.open(io.BytesIO(seg.content))
+
+    return mask_dict
 
 
 def hrnet_request(id, img_path):
+    img_prefix = f"data/{id}"
+    image_pil = Image.open(os.path.join(img_prefix, img_path)).convert("RGB")
     data = {"path": os.path.join(str(id), str(img_path))}
-    res = requests.post("http://118.67.142.203:30008/segment_hrnet/", data=data)
-    # Please check if next code works
-    hrnet_img, hrnet_json = res.content
-    return Image.open(io.BytesIO(hrnet_img))
-    
-async def make_annotation_json(img_path, data):
-    global annotation_info
-    annotation_dict = dict()
-    annotation_dict['image_path'] = img_path
-    annotation_dict['size'] = data['size']
-    annotation_dict['masks'] = list()
-    for label, mask in data['masks'].items():
-        mask_info = {"label" : label, "mask" : mask}
-        annotation_dict['masks'].append(mask_info)
-    annotation_info['annotation'].append(annotation_dict)
+    res = requests.post("http://127.0.0.1:30008/segment_hrnet/", data=data)
+    mask_dict = json.loads(res.content)
+
+    temp = []
+    for label, mask in mask_dict["masks"].items():
+        seg_mask = rle_decode(mask, mask_dict["size"])
+        temp.append(seg_mask)
+    global save_annotate
+    save_annotate = temp
+    return draw_image(np.array(image_pil), torch.tensor(np.array(temp), dtype=bool))
+
 
 # 현석이가 만들어 줄 것.
 def segment_text(id, img_path, text_prompt, threshold):
@@ -141,183 +164,127 @@ def segment_text(id, img_path, text_prompt, threshold):
         "text_prompt": string_prompt,
         "threshold": threshold,
     }
-    seg = requests.post("http://118.67.142.203:30008/segment_text/", data=data)
+    seg = requests.post("http://127.0.0.1:30008/segment_text/", data=data)
     mask_dict = json.loads(seg.content)
+
     temp = []
-    asyncio.run(make_annotation_json(img_path, mask_dict))
+    # asyncio.run(make_annotation_json(img_path, mask_dict))
     for label, mask in mask_dict["masks"].items():
         seg_mask = rle_decode(mask, mask_dict["size"])
-        temp.append((np.array(seg_mask), label))
+        temp.append((seg_mask, label))
 
     return image_pil, temp
 
 
 def segment_request(id, threshold, img_path, text_prompt):
-    return segment(id, img_path), segment_text(
-        id, img_path, text_prompt, threshold
-    )  # 얘 output이 [(building_image1, "buildings1"), (building_image2, "buildings2")] 이런식으로 나와야함
+    return hrnet_request(id, img_path)
 
 
-def json_download(id, img_path):
-    data = {"path": os.path.join(str(id), str(img_path))}
-    res = requests.post("http://118.67.142.203:30008/json_download/", data=data)
-    return res.content
+def json_upload(id):
+    with ZipFile(f"data/{id}/annotations.zip", "r") as f:
+        f.extractall(f"data/{id}")
+    data = {"id": str(id)}
+    with open(f"data/{id}/annotations.zip", "rb") as f:
+        files = {"files": f}
+        res = requests.post(
+            "http://127.0.0.1:30008/json_upload/",
+            data=data,
+            files=files,
+        )
 
 
 def finish(id):
     data = {"id": str(id)}
-    res = requests.post("http://118.67.142.203:30008/remove/", data=data)
-    shutil.rmtree(f"data/{str(id)}")  # 확인 필요
+    shutil.make_archive(f"data/{id}/annotation", "zip", f"data/annotations/{id}")
 
-def save_annotation(id):
-    global annotation_info
-    file_prefix = os.join("data", id)
-    file_path = os.join(file_prefix, "data.json")  # 저장할 파일 경로 및 이름
-    annotation_info['user_id'] = id
-    with open(file_path, "w") as json_file:
-        json.dump(annotation_info, json_file, indent=4) 
-    
-    
+    with open(f"data/{id}/annotation.zip", "rb") as f:
+        files = {"files": f}
+        upload_res = requests.post(
+            "http://127.0.0.1:30008/json_upload/", data=data, files=files
+        )
+
+    remove_res = requests.post("http://127.0.0.1:30008/remove/", data=data)
+    return f"data/{id}/annotation.zip"
+
+
+def save_annotation(id, img_path, image):
+    w, h = image.size
+    anno_dict = {}
+    anno_dict["size"] = [w, h]
+    anno_dict["image_path"] = img_path
+    anno_dict["masks"] = []
+    img_path = img_path.split(".")[0] + ".json"
+    save_path = f"data/annotations/{id}"
+    global save_annotate
+
+    for mask, label in zip(save_annotate, list(classes.keys())):
+        anno_dict["masks"].append({"label": label, "mask": rle_encode(mask)})
+    if not os.path.isdir(save_path):
+        os.makedirs(save_path)
+    with open(os.path.join(save_path, img_path), "w") as f:
+        json.dump(anno_dict, f, indent=4)
+    return "\n".join(os.listdir(f"data/annotations/{id}"))
+
+
+def clear(coord):
+    coord = []
+    return coord
+
+
+def modify(id, img_path, label, image, coord):
+    points = [[i[0], i[1]] for i in coord]
+    labels = [i[2] for i in coord]
+    data = {
+        "path": os.path.join(str(id), str(img_path)),
+        "global_points": points,
+        "global_point_label": labels,
+    }
+    res = requests.post("http://127.0.0.1:30008/segment/", data=data)
+    mask_array = json.loads(res.content)
+
+    temp = modify_label(np.array(mask_array), label)
+    return draw_image(np.array(image), torch.tensor(np.array(temp), dtype=bool))
+
+
+def modify_label(mask, label):
+    global save_annotate
+    mask = Image.fromarray(mask).resize(
+        (save_annotate[0].shape[1], save_annotate[0].shape[0])
+    )
+    mask.save("mask.png")
+    mask = np.array(mask)
+    temp = []
+    for i, m in enumerate(save_annotate):
+        if i == classes[label][0]:
+            temp.append(np.logical_or(m, mask))
+        else:
+            temp.append(np.logical_and(m, np.logical_not(mask)))
+
+    save_annotate = temp
+    return temp
+
+
 # Description
 title = "<center><strong><font size='8'>Image Annotation Tool<font></strong></center>"
 
 css = "h1 { text-align: center } .about { text-align: justify; padding-left: 10%; padding-right: 10%; }"
 
 
-def get_points(image, evt: gr.SelectData):
-    w, h = image.size
+def add_points(image, add_del, coord, evt: gr.SelectData):
     x, y = evt.index[0], evt.index[1]
-    return x, y, w, h
+    coord.append([x, y, True if add_del == "add label" else False])
+    return coord
 
 
-def remove_mask_from_image(image_path, mask_array, output_path):
-    # 이미지와 마스크를 엽니다.
-    image = Image.open(image_path)
-    mask = Image.fromarray(mask_array.astype("uint8") * 255, mode="L")
-
-    # 이미지와 마스크의 크기가 같은지 확인합니다.
-    if image.size != mask.size:
-        raise ValueError("Image and mask size must be the same.")
-
-    # 마스크 부분을 지우기 위해 투명한 값을 가진 새로운 이미지를 생성합니다.
-    transparent_image = Image.new("RGBA", image.size, (0, 0, 0, 0))
-
-    # 이미지와 마스크의 모든 픽셀을 탐색하며 마스크 부분을 투명한 이미지에 추가합니다.
-    for x in range(image.width):
-        for y in range(image.height):
-            pixel = image.getpixel((x, y))
-            mask_pixel = mask.getpixel((x, y))
-            if mask_pixel == 0:  # 마스크 값이 0인 부분은 투명하게 만듭니다.
-                transparent_image.putpixel((x, y), (0, 0, 0, 0))
-            else:  # 마스크 값이 0이 아닌 부분은 원래 이미지의 값을 유지합니다.
-                transparent_image.putpixel((x, y), pixel)
-
-    # 결과 이미지를 저장합니다.
-    transparent_image.save(output_path)
-
-
-def merge_images_to_mask(image_path, mask_array, output_path):
-    # 이미지와 마스크를 엽니다.
-    image = Image.open(image_path)
-    mask = Image.fromarray(mask_array.astype("uint8") * 255, mode="L")
-
-    # 빈 채널을 만들기 위해 투명한 값을 가진 새로운 이미지를 생성합니다.
-    empty_image = Image.new("RGBA", image.size, (0, 0, 0, 0))
-
-    # 빨간색 마스크를 생성합니다.
-    red_mask = Image.new("L", mask.size, 0)
-    for x in range(mask.width):
-        for y in range(mask.height):
-            pixel = mask.getpixel((x, y))
-            if pixel == 255:  # (255, 0, 0, 0)인 부분을 빨간색 마스크로 설정합니다.
-                red_mask.putpixel((x, y), 255)
-
-    # 빨간색 마스크와 이미지를 합쳐서 새로운 이미지를 생성합니다.
-    merged_image = Image.merge(
-        "RGBA", [empty_image, empty_image, empty_image, red_mask]
-    )
-
-    # 1체널 True, False로 이루어진 마스크를 생성합니다.
-    result_mask = np.array(merged_image.convert("L")) > 0
-
-    # 결과 마스크를 저장합니다.
-    np.save(output_path, result_mask)
-
-
-def add_mask(coord, sam_image, dropdown, cond_img):
-    x, y, w, h = coord
-    pixels = np.array(sam_image)
-    print(pixels.shape)
-    prev_h, prev_w, _ = pixels.shape
-
-    x_ratio = prev_w / w
-    y_ratio = prev_h / h
-    print(x, y)
-    x = int(x * x_ratio)
-    y = int(y * y_ratio)
-    print(x, y)
-    mask = np.all(pixels == pixels[y, x], axis=-1)
-    print(mask.shape)
-    image = Image.fromarray(mask)
-    image = image.resize((w, h))
-    # output_path = "output_image.png"
-    # image.save(output_path)
-    # mask = np.resize(mask, (h, w))
-
-    # print(type(save_annotate[0][classes[dropdown][0]]))
-    save_annotate[0] = list(save_annotate[0])
-    save_annotate[0][classes[dropdown][0]] = np.logical_or(
-        np.array(image), save_annotate[0][classes[dropdown][0]]
-    )
-    save_annotate[0] = tuple(save_annotate[0])
-    # apply_mask_to_image(
-    #     gdsam[1][classes[dropdown][0]][0]["name"],
-    #     mask,
-    #     gdsam[1][classes[dropdown][0]][0]["name"],
-    # )
-    # print(gdsam[0]["name"])
-    # img = np.array(Image.open(gdsam[0]["name"]).convert("RGB"))
-    return cond_img, save_annotate
-
-
-def delete_mask(coord, sam_image, dropdown, gdsam):
-    x, y, w, h = coord
-    pixels = np.array(sam_image)
-    prev_x, prev_y, _ = pixels.shape
-    ratio = x / w
-
-    x = int(prev_x * ratio)
-    y = int(prev_y * ratio)
-    mask = np.all(pixels == pixels[x, y], axis=-1)
-    mask = np.resize(mask, (w, h))
-
-    remove_mask_from_image(
-        gdsam[1][dropdown][0]["data"], mask, gdsam[1][dropdown][0]["data"]
-    )
-
-    return gdsam
-
-
+origin_img_e = gr.Image(label="Original", interactive=False, type="pil")
 cond_img_e = gr.Image(label="Input", interactive=False, type="pil")
-segm_img_e = gr.Image(label="Mobile SAM", interactive=False, type="pil")
-gdSAM_img_e = gr.AnnotatedImage(label="GDSAM", interactive=True)
-# HRNet_img_e = gr.AnnotatedImage(label="HRNet", interactive=False)
+
 
 # temp = [HRNet_img_e, gdSAM_img_e]
 id = gr.Textbox()
 img_list = gr.JSON()
+drive_data = gr.Radio(["walking dataset", "others"])
 
-annotation_info = {"annotation" : list()}
-'''
-user_id : string
-annotation : array of dict
-ㄴimage_path : string
-ㄴsize : array of int
-ㄴmasks : array of dict
-    ㄴlabel : string
-    ㄴmask : string (rle-encoded)
-'''
-drive_data = gr.Radio(["drive dataset", "others"])
 
 my_theme = gr.Theme.from_hub("nuttea/Softblue")
 with gr.Blocks(
@@ -329,7 +296,7 @@ with gr.Blocks(
     with gr.Tab("file upload Tab"):
         gr.Interface(
             zip_upload,
-            inputs=[data_type, "file", id],
+            inputs=[drive_data, "file", id],
             outputs=img_list,
             allow_flagging="never",
         )
@@ -345,17 +312,17 @@ with gr.Blocks(
             start_btn_e = gr.Button("Start Annotation", size="sm")
     with gr.Tab("Annotation Tab"):
         with gr.Row():
-            present_img = gr.Textbox(label="present Image name", interactive=False)
+            with gr.Column(scale=3):
+                present_img = gr.Textbox(label="present Image name", interactive=False)
+            with gr.Column(scale=1):
+                request_btn_e = gr.Button("request", variant="primary")
         with gr.Row():
-            with gr.Column():
-                with gr.Tab("Original Image"):
-                    cond_img_e.render()
-            with gr.Column():
-                # with gr.Tab("HRNet Output"):
-                #     HRNet_img_e.render()
-                with gr.Tab("Grounding Dino"):
-                    gdSAM_img_e.render()
-                    segm_img_e.render()
+            with gr.Tab("Original Image"):
+                origin_img_e.render()
+                segm_img_e = gr.JSON(visible=False)
+            with gr.Tab("Table Image"):
+                cond_img_e.render()
+                coord = gr.JSON([])
         with gr.Row():
             threshold = gr.Slider(
                 0.01,
@@ -369,7 +336,18 @@ with gr.Blocks(
             )
         with gr.Row():
             with gr.Column():
+                clear_btn_e = gr.Button("clear")
+            with gr.Column():
+                dropdown = gr.Dropdown(interactive=True)
+            with gr.Column():
+                add_del_radio = gr.Radio(["add label", "delete label"])
+            with gr.Column():
+                modify_btn_e = gr.Button("modify")
+        with gr.Row():
+            with gr.Column():
                 prev_btn_e = gr.Button("prev", variant="secondary")
+            with gr.Column():
+                save_btn_e = gr.Button("save", variant="secondary")
             with gr.Column():
                 next_btn_e = gr.Button("next", variant="secondary")
         with gr.Row(variant="panel"):
@@ -377,43 +355,33 @@ with gr.Blocks(
                 choices=[],
                 label="select label in present image",
                 interactive=True,
+                visible=False,
             )
 
         with gr.Row():
-            with gr.Column():
-                dropdown = gr.Dropdown()
-            with gr.Column():
-                add_btn_e = gr.Button("add", variant="secondary")
-            with gr.Column():
-                delete_btn_e = gr.Button("delete", variant="secondary")
-
-            with gr.Column():
-                request_btn_e = gr.Button("request", variant="primary")
+            prev_annotation = gr.Textbox(label="Preview annotation.zip")
         with gr.Row():
-            coord_value = gr.Textbox(label="Preview annotation.json")
-        with gr.Row():
-            with gr.Column():
+            with gr.Column(scale=1):
                 finish_btn_e = gr.Button("Finish")
-            with gr.Column():
-                save_btn_e = gr.Button("Save")
-                coord = gr.JSON(visible=False)
+            with gr.Column(scale=2):
+                file_response = gr.File()
 
     ################ 1 page buttons ################
-    data_type.change(
+    drive_data.change(
         fn=lambda value: (
             gr.update(
-                value=hrnet_label[int(value == "drive dataset")],
-                visible=(value != "drive dataset"),
+                value=hrnet_label[int(value == "walking dataset")],
+                visible=(value != "walking dataset"),
             ),
-            gr.update(visible=(value != "drive dataset")),
+            gr.update(visible=(value != "walking dataset")),
         ),
-        inputs=data_type,
+        inputs=drive_data,
         outputs=[label_list, threshold],
     )
     set_label_btn_e.click(
         fn=lambda value: (
             label_checkbox.update(choices=value.replace(", ", ",").split(",")),
-            label_checkbox.update(choices=value.replace(", ", ",").split(",")),
+            gr.update(choices=value.replace(", ", ",").split(",")),
         ),
         inputs=label_list,
         outputs=[label_checkbox, dropdown],
@@ -436,35 +404,29 @@ with gr.Blocks(
     request_btn_e.click(
         segment_request,
         inputs=[id, threshold, present_img, label_checkbox],
-        outputs=[
-            segm_img_e,
-            gdSAM_img_e,  # gdSAM얘는 [(building_image, "buildings")] 이런식으로 들어가야함.
-        ],
+        outputs=[cond_img_e],
     )
-    add_btn_e.click(
-        fn=lambda coord, segm, dropdown, cond_img: gr.update(
-            value=(add_mask(coord, segm, dropdown, cond_img))
-        ),
-        inputs=[coord, segm_img_e, dropdown, cond_img_e],
-        outputs=gdSAM_img_e,
+
+    save_btn_e.click(
+        save_annotation, inputs=[id, present_img, origin_img_e], outputs=prev_annotation
     )
-    delete_btn_e.click(
-        fn=lambda coord, segm, dropdown, gdsam: gr.update(
-            value=(delete_mask(coord, segm, dropdown, gdsam))
-        ),
-        inputs=[coord, segm_img_e, dropdown, gdSAM_img_e],
-        outputs=gdSAM_img_e,
+    finish_btn_e.click(finish, inputs=id, outputs=file_response)
+    clear_btn_e.click(clear, inputs=coord, outputs=coord)
+    modify_btn_e.click(
+        fn=modify,
+        inputs=[id, present_img, dropdown, origin_img_e, coord],
+        outputs=[cond_img_e],
     )
-    finish_btn_e.click(finish, inputs=id)
-    save_btn_e.click(save_annotation, inputs=id)
     ################################################
 
-    cond_img_e.select(get_points, inputs=cond_img_e, outputs=coord)
+    cond_img_e.select(
+        add_points, inputs=[cond_img_e, add_del_radio, coord], outputs=[coord]
+    )
 
     present_img.change(
         fn=viz_img,
         inputs=[id, present_img],
-        outputs=[cond_img_e],
+        outputs=[origin_img_e],
     )
 demo.queue()
 demo.launch()

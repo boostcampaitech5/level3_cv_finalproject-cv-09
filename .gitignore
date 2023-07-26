@@ -1,5 +1,4 @@
 practice
-.pth
 *.cfg
 __pycache__
 images_win
@@ -25,3 +24,4 @@ checkpoint/
 key
 trigger/
 airflow.db
+*.pth
