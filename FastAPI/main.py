@@ -2,12 +2,8 @@ import os
 import torch
 import numpy as np
 import shutil
-import json
-import cv2
-import argparse
 from datetime import datetime
 from torchvision import transforms
-from io import BytesIO
 from hrnet.models.light import PLModel
 from hrnet.dataset import CustomKRLoadSegmentation
 from torchvision.transforms import ToTensor, Normalize
@@ -350,21 +346,11 @@ def segment_hrnet(path: str = Form(...)):
     return hrnet_json
 
 
-# @app.post("/json_download/")
-# def json_download(path: str = Form(...)):
-#     id, file_name = path.split("/")
-#     path = change_path(path)
-#     file_name = file_name.split(".")[0]
-#     output = {"test": [1, 2, 3, 4], "test2": [5, 6, 7, 8]}
-#     with open(f"{FOLDER_DIR}/{id}/{file_name}.json", "w") as f:
-#         json.dump(output, f, indent=2)
-#     return output
-
-
-@app.post("/json_upload")
-def json_upload(id: str = Form(...), files: UploadFile = File(...)):
+@app.post("/json_upload/")
+async def json_upload(id: str = Form(...), files: UploadFile = File(...)):
     file_name = (files.filename).split(".")[0]
-    content = files.read()
+    content = await files.read()
+    print(content)
     ZIP_PATH = f"{FOLDER_DIR}/{id}/zip"
 
     with open(f"{ZIP_PATH}/{file_name}.zip", "wb") as f:
@@ -373,7 +359,8 @@ def json_upload(id: str = Form(...), files: UploadFile = File(...)):
 
 
 @app.post("/remove/")
-def remove(id: str = Form(...), annotated_data: dict = Form(...)):
+# def remove(id: str = Form(...), annotated_data: dict = Form(...)):
+def remove(id: str = Form(...)):
     if id == "":
         return 0
     zip_file = ZipFile(f"{FOLDER_DIR}/{id}/{id}.zip", "w")
@@ -381,21 +368,13 @@ def remove(id: str = Form(...), annotated_data: dict = Form(...)):
         zip_file.write(os.path.join(f"{FOLDER_DIR}/{id}/original", file))
     zip_file.close()
     '''
-    <TO BE IMPLEMENTED>
     Send zipfile to airflow server using scp command
     scp_key file is vital
     Following terminal command was implemented properly :
     scp -P 2251 -i ~/level3_cv_finalproject-cv-09/scp_key FastAPI/data/a/zip/insta.zip root@118.67.132.218:/opt/ml/
-    File name must be unique -> using datetime? or id?
-    print(os.system(f"scp -P 2251 -i ~/level3_cv_finalproject-cv-09/scp_key {FOLDER_DIR}/{id}/{now}.zip root@118.67.132.218:/opt/ml/"))
     '''
-    now = datetime.now().strftime(f"{id}%Y%m%d%H%M%S")
-    os.system(f"scp -P 2251 -i ~/level3_cv_finalproject-cv-09/scp_key {FOLDER_DIR}/{id}/{now}.zip root@118.67.132.218:/opt/ml/")
-    path_list = []
-    path_list.append(f"{FOLDER_DIR}/{id}/original")
-    path_list.append(f"{FOLDER_DIR}/{id}/segment")
-    path_list.append(f"{FOLDER_DIR}/{id}/zip")
-    path_list.append(f"{FOLDER_DIR}/{id}/hrnet")
-    for path in path_list:
-        if os.path.isdir(path):
-            shutil.rmtree(path)
+    # now = datetime.now().strftime(f"{id}%Y%m%d%H%M%S")
+    os.system(f"scp -P 2251 -i ~/level3_cv_finalproject-cv-09/scp_key {FOLDER_DIR}/{id}/{id}.zip root@118.67.132.218:/opt/ml/")
+    path = f"{FOLDER_DIR}/{id}"
+    if os.path.isdir(path):
+        shutil.rmtree(path)
