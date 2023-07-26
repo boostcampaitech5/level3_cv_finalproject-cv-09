@@ -2,7 +2,6 @@ import mlflow
 import mlflow.pytorch
 from mlflow.tracking import MlflowClient
 import torch
-from torchvision import transforms
 import argparse
 from datetime import datetime
 from pytorch_lightning.loggers.mlflow import MLFlowLogger
@@ -10,14 +9,14 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from utils import seed_everything
 import os
 import pytz
-from dataset import CustomCityscapesSegmentation, CustomKRLoadSegmentation
 from models.light import PLModel
 import pytorch_lightning as pl
+from dataset.dataset import get_data_loader
 
 
 def get_arg():
     parser = argparse.ArgumentParser(description="mlflow-pytorch test")
-    parser.add_argument("--batch",type=int, default=2)
+    parser.add_argument("--batch",type=int, default=8)
     parser.add_argument("--val_batch",type=int, default=8)
     parser.add_argument("--lr",type=float, default=1e-3)
     parser.add_argument("--epochs",type=int,default=2)
@@ -28,7 +27,7 @@ def get_arg():
     parser.add_argument("--bn_type", type=str, default= 'torchbn')
     parser.add_argument("--num_classes", type=int, default= 19)
     parser.add_argument("--backbone", type=str, default='hrnet48')
-    parser.add_argument("--pretrained", type=str, default='/opt/ml/level3_cv_finalproject-cv-09/MLflow/checkpoint/best.pth')
+    parser.add_argument("--pretrained", type=str, default='/opt/ml/level3_cv_finalproject-cv-09/MLflow/checkpoint/origin.pth')
     parser.add_argument("--experiment_name",type=str, default='krload')
     
     args = parser.parse_args()
@@ -57,7 +56,6 @@ def run(args):
     # 이전 실험들을 불러와서 제일 높은 max값 불러오기
     experiment_id = experiment.experiment_id
     
-    
     runs = client.search_runs(experiment_id)
     best_score = 0
     if len(runs):
@@ -69,42 +67,13 @@ def run(args):
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
-    train_data = CustomCityscapesSegmentation(
-        data_dir = os.path.join(base_path,'data','cityscape'),
-        image_set="val",
-        transform = transforms.ToTensor(),
-        target_transform = transforms.PILToTensor(),
-        )
-    
-    
-    val_data = CustomCityscapesSegmentation(
-        data_dir = os.path.join(base_path,'data','cityscape'),
-        image_set="val",
-        transform = transforms.ToTensor(),
-        target_transform = transforms.PILToTensor(),
-        )
-    
-    test_data = CustomKRLoadSegmentation(
-        data_dir = os.path.join(base_path,'data','krload'),
-        image_set='test',
-        transform = transforms.ToTensor(),
-        target_transform = transforms.PILToTensor(),
-    )
-    
-    train_loader = torch.utils.data.DataLoader(dataset = train_data,
-                                               batch_size = args.batch, shuffle = True, num_workers=8,
-                                               )
-    val_loader = torch.utils.data.DataLoader(dataset = val_data,
-                                                batch_size = args.val_batch, shuffle = False, num_workers=8,
-                                               )
-    
-    test_loader = torch.utils.data.DataLoader(dataset = test_data,
-                                                batch_size = args.val_batch, shuffle = False, num_workers=8,
-                                               )
+    # data loader 가져오기
+    train_loader, val_loader, test_loader = get_data_loader(args)
     
     # lighiting model 선언
     model = PLModel(args=args)
     
+    # start mlflow logging
     run_name = datetime.now(pytz.timezone('Asia/Seoul')).strftime("%Y%m%d%H%M")
     with mlflow.start_run(experiment_id=experiment_id,run_name=run_name) as run:
         mlflow.pytorch.autolog()
@@ -175,10 +144,7 @@ def run(args):
                                                     stages=['Production'])[0]
             
             # checkpoint에 weight저장
-            torch.save({"state_dict":model.net.state_dict()}, f=args.pretrained)
-            new_version_save = args.pretrained.replace("best",f'last_version')
-            torch.save({"state_dict":model.net.state_dict()}, f=new_version_save)
-            
+            torch.save({"state_dict":model.net.state_dict()}, f=args.pretrained.replace("origin","best"))
             
             pre_version = int(last_version.version)-1
             # 이전 버전이 있었다면 staging변경
