@@ -143,7 +143,6 @@ def hrnet_request(id, img_path):
     image_pil = Image.open(os.path.join(img_prefix, img_path)).convert("RGB")
     data = {"path": os.path.join(str(id), str(img_path))}
     res = requests.post("http://127.0.0.1:40001/segment_hrnet/", data=data)
-    # Please check if next code works
     mask_dict = json.loads(res.content)
 
     temp = []
@@ -186,6 +185,19 @@ def json_download(id, img_path):
     data = {"path": os.path.join(str(id), str(img_path))}
     res = requests.post("http://127.0.0.1:40001/json_download/", data=data)
     return res.content
+
+
+def json_upload(id, json_zip):
+    with ZipFile(json_zip.name, "r") as f:
+        f.extractall(f"data/{id}")
+    data = {"id": str(id)}
+    with open(json_zip.name, "rb") as f:
+        files = {"files": f}
+        res = requests.post(
+            "http://127.0.0.1:40001/json_upload/",
+            data=data,
+            files=files,
+        )
 
 
 def finish(id):

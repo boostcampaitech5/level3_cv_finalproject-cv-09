@@ -5,6 +5,7 @@ import shutil
 import json
 import cv2
 import argparse
+from datetime import datetime
 from torchvision import transforms
 from io import BytesIO
 from hrnet.models.light import PLModel
@@ -361,6 +362,17 @@ def segment_hrnet(path: str = Form(...)):
 #     return output
 
 
+@app.post("/json_upload")
+def json_upload(id: str = Form(...), files: UploadFile = File(...)):
+    file_name = (files.filename).split(".")[0]
+    content = files.read()
+    ZIP_PATH = f"{FOLDER_DIR}/{id}/zip"
+
+    with open(f"{ZIP_PATH}/{file_name}.zip", "wb") as f:
+        f.write(content)
+    ZipFile(f"{ZIP_PATH}/{file_name}.zip").extractall(f"data/{id}/original")
+
+
 @app.post("/remove/")
 def remove(id: str = Form(...), annotated_data: dict = Form(...)):
     if id == "":
@@ -378,6 +390,8 @@ def remove(id: str = Form(...), annotated_data: dict = Form(...)):
     File name must be unique -> using datetime? or id?
     print(os.system(f"scp -P 2251 -i ~/level3_cv_finalproject-cv-09/scp_key {FOLDER_DIR}/{id}/{now}.zip root@118.67.132.218:/opt/ml/"))
     '''
+    # now = datetime.now().strftime(f"{id}%Y%m%d%H%M%S")
+    # print(os.system(f"scp -P 2251 -i ~/level3_cv_finalproject-cv-09/scp_key {FOLDER_DIR}/{id}/{now}.zip root@118.67.132.218:/opt/ml/"))
     path_list = []
     path_list.append(f"{FOLDER_DIR}/{id}/original")
     path_list.append(f"{FOLDER_DIR}/{id}/segment")
