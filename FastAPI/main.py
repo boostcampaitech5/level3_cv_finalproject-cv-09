@@ -374,7 +374,9 @@ def remove(id: str = Form(...)):
     scp -P 2251 -i ~/level3_cv_finalproject-cv-09/scp_key FastAPI/data/a/zip/insta.zip root@118.67.132.218:/opt/ml/
     '''
     # now = datetime.now().strftime(f"{id}%Y%m%d%H%M%S")
+    # Implement SCP
     os.system(f"scp -P 2251 -i ~/level3_cv_finalproject-cv-09/scp_key {FOLDER_DIR}/{id}/{id}.zip root@118.67.132.218:/opt/ml/")
+    
     path = f"{FOLDER_DIR}/{id}"
     if os.path.isdir(path):
         shutil.rmtree(path)
