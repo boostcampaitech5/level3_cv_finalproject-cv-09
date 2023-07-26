@@ -153,10 +153,10 @@ def hrnet_inference(id, file_name):
         mask_dict["masks"][element[0]] = rle_encode(np.array(element[1]))
 
     # 이미지 저장
-    out = np.squeeze(mask, axis=0)
-    out = mask_color(out, CustomKRLoadSegmentation)
-    output_path = f"{FOLDER_DIR}/{id}/hrnet/{file_name}"
-    cv2.imwrite(output_path, out)
+    # out = np.squeeze(mask, axis=0)
+    # out = mask_color(out, CustomKRLoadSegmentation)
+    # output_path = f"{FOLDER_DIR}/{id}/hrnet/{file_name}"
+    # cv2.imwrite(output_path, out)
 
     return mask_dict
 
@@ -347,20 +347,18 @@ def segment_hrnet(path: str = Form(...)):
     #    media_type="image/jpg",
     # )
     hrnet_json = JSONResponse(content=rle_dict)
-    # please check if multiple Response works
-    # return hrnet_img, hrnet_json
     return hrnet_json
 
 
-@app.post("/json_download/")
-def json_download(path: str = Form(...)):
-    id, file_name = path.split("/")
-    path = change_path(path)
-    file_name = file_name.split(".")[0]
-    output = {"test": [1, 2, 3, 4], "test2": [5, 6, 7, 8]}
-    with open(f"{FOLDER_DIR}/{id}/{file_name}.json", "w") as f:
-        json.dump(output, f, indent=2)
-    return output
+# @app.post("/json_download/")
+# def json_download(path: str = Form(...)):
+#     id, file_name = path.split("/")
+#     path = change_path(path)
+#     file_name = file_name.split(".")[0]
+#     output = {"test": [1, 2, 3, 4], "test2": [5, 6, 7, 8]}
+#     with open(f"{FOLDER_DIR}/{id}/{file_name}.json", "w") as f:
+#         json.dump(output, f, indent=2)
+#     return output
 
 
 @app.post("/remove/")
@@ -371,14 +369,20 @@ def remove(id: str = Form(...), annotated_data: dict = Form(...)):
     for file in os.listdir(f"{FOLDER_DIR}/{id}/original"):
         zip_file.write(os.path.join(f"{FOLDER_DIR}/{id}/original", file))
     zip_file.close()
-    """
+    '''
     <TO BE IMPLEMENTED>
     Send zipfile to airflow server using scp command
-    """
+    scp_key file is vital
+    Following terminal command was implemented properly :
+    scp -P 2251 -i ~/level3_cv_finalproject-cv-09/scp_key FastAPI/data/a/zip/insta.zip root@118.67.132.218:/opt/ml/
+    File name must be unique -> using datetime? or id?
+    print(os.system(f"scp -P 2251 -i ~/level3_cv_finalproject-cv-09/scp_key {FOLDER_DIR}/{id}/{now}.zip root@118.67.132.218:/opt/ml/"))
+    '''
     path_list = []
     path_list.append(f"{FOLDER_DIR}/{id}/original")
     path_list.append(f"{FOLDER_DIR}/{id}/segment")
     path_list.append(f"{FOLDER_DIR}/{id}/zip")
+    path_list.append(f"{FOLDER_DIR}/{id}/hrnet")
     for path in path_list:
         if os.path.isdir(path):
             shutil.rmtree(path)
