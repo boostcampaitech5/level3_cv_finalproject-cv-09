@@ -16,7 +16,6 @@ from utils.tools_gradio import fast_process
 from utils.tools import box_prompt, format_results, point_prompt
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import FileResponse, JSONResponse
-from fastapi.encoders import jsonable_encoder
 from PIL import Image
 from mobile_sam import SamAutomaticMaskGenerator, SamPredictor, sam_model_registry
 from collections import namedtuple
