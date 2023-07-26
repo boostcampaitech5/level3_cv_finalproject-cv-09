@@ -94,7 +94,7 @@ def rle_encode(mask):
     return rle
 
 
-def zip_upload(is_drive, img_zip, id):
+def zip_upload(is_walking, img_zip, id):
     with ZipFile(img_zip.name, "r") as f:
         f.extractall(f"data/{id}")
     data = {"id": str(id)}
@@ -370,10 +370,10 @@ with gr.Blocks(
     drive_data.change(
         fn=lambda value: (
             gr.update(
-                value=hrnet_label[int(value == "drive dataset")],
-                visible=(value != "drive dataset"),
+                value=hrnet_label[int(value == "walking dataset")],
+                visible=(value != "walking dataset"),
             ),
-            gr.update(visible=(value != "drive dataset")),
+            gr.update(visible=(value != "walking dataset")),
         ),
         inputs=drive_data,
         outputs=[label_list, threshold],
