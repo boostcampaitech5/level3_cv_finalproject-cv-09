@@ -12,6 +12,7 @@ from hrnet.dataset import CustomKRLoadSegmentation
 from torchvision.transforms import ToTensor, Normalize
 from zipfile import ZipFile
 from utils.tools_gradio import fast_process
+from utils.tools import box_prompt, format_results, point_prompt
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.encoders import jsonable_encoder
@@ -161,6 +162,43 @@ def hrnet_inference(id, file_name):
 
 
 @torch.no_grad()
+def segment_with_points(image, global_points, global_point_label, input_size=1024):
+    input_size = int(input_size)
+    w, h = image.size
+    scale = input_size / max(w, h)
+    new_w = int(w * scale)
+    new_h = int(h * scale)
+    image = image.resize((new_w, new_h))
+
+    scaled_points = np.array(
+        [int(int(point) * scale) for point in global_points]
+    ).reshape(-1, 2)
+    scaled_point_label = np.array(
+        [True if x == "True" else False for x in global_point_label]
+    )
+
+    if scaled_points.size == 0 and scaled_point_label.size == 0:
+        print("No points selected")
+        return image, image
+
+    nd_image = np.array(image)
+    app.state.predictor.set_image(nd_image)
+    masks, scores, logits = app.state.predictor.predict(
+        point_coords=scaled_points,
+        point_labels=scaled_point_label,
+        multimask_output=True,
+    )
+
+    results = format_results(masks, scores, logits, 0)
+
+    annotations, _ = point_prompt(
+        results, scaled_points, scaled_point_label, new_h, new_w
+    )
+    annotations = np.array(annotations)
+    return annotations
+
+
+@torch.no_grad()
 async def segment_everything(
     image,
     input_size=1024,
@@ -257,21 +295,19 @@ async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
 
 
 @app.post("/segment/")
-async def segment(path: str = Form(...)):
+async def segment(
+    path: str = Form(...),
+    global_points: list = Form(...),
+    global_point_label: list = Form(...),
+):
     path = change_path(path)
     id, file_name = path.split("/")
     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
     img = Image.open(img_path).convert("RGB")
-    fig, mask_dict = await segment_everything(img)
-    output = fig.convert("RGB")
-    if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
-        os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
-    output.save(f"{FOLDER_DIR}/{id}/segment/{file_name}")
-    # seg_img = FileResponse(
-    #     f"{FOLDER_DIR}/{id}/segment/{file_name}",
-    #     media_type="image/jpg",
-    # )
-    output_reponse = JSONResponse(content=mask_dict)
+    mask_array = segment_with_points(
+        img, global_points=global_points, global_point_label=global_point_label
+    )
+    output_reponse = JSONResponse(content=mask_array.tolist())
     return output_reponse
 
 
