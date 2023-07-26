@@ -126,18 +126,18 @@ def process_image_and_get_masks(img):
     return masks
 
 
-def mask_color(mask, tuple):
-    cmap = tuple.cmap
-    if isinstance(mask, np.ndarray):
-        r_mask = np.zeros_like(mask, dtype=np.uint8)
-        g_mask = np.zeros_like(mask, dtype=np.uint8)
-        b_mask = np.zeros_like(mask, dtype=np.uint8)
-        for k in range(len(cmap)):
-            indice = mask == k
-            r_mask[indice] = cmap[k][0]
-            g_mask[indice] = cmap[k][1]
-            b_mask[indice] = cmap[k][2]
-        return np.stack([b_mask, g_mask, r_mask], axis=2)
+#def mask_color(mask, tuple):
+#    cmap = tuple.cmap
+#    if isinstance(mask, np.ndarray):
+#        r_mask = np.zeros_like(mask, dtype=np.uint8)
+#        g_mask = np.zeros_like(mask, dtype=np.uint8)
+#        b_mask = np.zeros_like(mask, dtype=np.uint8)
+#        for k in range(len(cmap)):
+#            indice = mask == k
+#            r_mask[indice] = cmap[k][0]
+#            g_mask[indice] = cmap[k][1]
+#            b_mask[indice] = cmap[k][2]
+#        return np.stack([b_mask, g_mask, r_mask], axis=2)
 
 
 def hrnet_inference(id, file_name):
