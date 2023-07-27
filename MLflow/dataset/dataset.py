@@ -3,7 +3,7 @@ from collections import namedtuple
 import torch
 import numpy as np
 import os
-from dataset.augment import get_train_transform
+from dataset.augment import get_train_transform, cutmix_collate_fn
 
 class CustomCityscapesSegmentation(torch.utils.data.Dataset):
     CityscapesClass = namedtuple('CityscapesClass', ['name', 'id', 'train_id', 'category', 'category_id',
@@ -200,9 +200,14 @@ def get_data_loader(args):
         image_set='test',
         transform = test_transform,
     )
+    if args.cutmix:
+        collate_fn = cutmix_collate_fn
+    else:
+        collate_fn = None
     
     train_loader = torch.utils.data.DataLoader(dataset = train_data,
                                                batch_size = args.batch, shuffle = True, num_workers=4,
+                                               collate_fn= collate_fn
                                                )
     val_loader = torch.utils.data.DataLoader(dataset = val_data,
                                                 batch_size = args.val_batch, shuffle = False, num_workers=4,

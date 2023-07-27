@@ -17,7 +17,7 @@ class FileSensorWithSkip(FileSensor):
 default_args = {
     # 'owner': 'kyle',
     'depends_on_past': False,  # 이전 DAG의 Task가 성공, 실패 여부에 따라 현재 DAG 실행 여부가 결정. False는 과거의 실행 결과 상관없이 매일 실행한다
-    'start_date': datetime(2023,7,25,15),
+    'start_date': datetime(2023,7,26,15),
     # 'retires': 1,  # 실패시 재시도 횟수
     # 'retry_delay': timedelta(minutes=5)  # 만약 실패하면 5분 뒤 재실행
     # 'priority_weight': 10 # DAG의 우선 순위를 설정할 수 있음
@@ -54,7 +54,7 @@ with DAG(
     )
     
     # github mlflow의 train 코드
-    bash_command = f"python {os.path.abspath(os.path.dirname(os.path.dirname(__file__)))}/MLflow/train.py"
+    bash_command = f"python {os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))}/MLflow/train.py"
     
     retrain_task = BashOperator(
         task_id = 'retrain',
