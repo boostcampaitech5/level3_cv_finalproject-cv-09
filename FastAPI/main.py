@@ -285,5 +285,5 @@ def remove(id: str = Form(...)):
 async def weight(files: UploadFile = File(...)):
     file_name = files.filename
     content = await files.read()
-    with open(f"/opt/ml/level3_cv_finalproject-cv-09/FastAPI/hrnet/checkpoint/{file_name}") as f:
+    with open(f"/opt/ml/level3_cv_finalproject-cv-09/FastAPI/hrnet/checkpoint/{file_name}", "wb") as f:
         f.write(content)
