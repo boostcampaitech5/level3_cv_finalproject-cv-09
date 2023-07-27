@@ -97,11 +97,9 @@ def get_ID(file):
 def make_folder(id):
     train_path = "/opt/ml/level3_cv_finalproject-cv-09/MLflow/data/krload"
 
-    if not os.path.exists(os.path.join(train_path, "imgs", id)):
-        os.makedirs(os.path.join(train_path, "imgs/train", id))
-        os.makedirs(os.path.join(train_path, "labels/train", id))
-    else:
-        return
+    os.makedirs(os.path.join(train_path, "imgs/train", id), exist_ok=True)
+    os.makedirs(os.path.join(train_path, "labels/train", id), exist_ok=True)
+
 
 
 #jpg랑 json 매칭되는지 확인후 파일 이동
@@ -110,32 +108,33 @@ def check_if_match_and_send(id):
     dest_img_path = "/opt/ml/level3_cv_finalproject-cv-09/MLflow/data/krload/imgs/train"
     dest_label_path = "/opt/ml/level3_cv_finalproject-cv-09/MLflow/data/krload/labels/train"
 
-    file_list = os.listdir(tmp_path)
+    img_path = os.path.join(dest_img_path, id)
+    label_path = os.path.join(dest_label_path, id)
 
-    s_list = sorted(file_list)
+    file_path = os.path.join(tmp_path, id)
+    anno_path = os.path.join(file_path, "annotations")
 
-    while len(s_list) > 1:
-        file1 = s_list[0]
-        file2 = s_list[1]
+    f_list = os.listdir(file_path)
 
-        name1, ext1 = os.path.splitext(file1)
-        name2, ext2 = os.path.splitext(file2)
+    s_list = sorted(f_list)
 
-        file1_full = os.path.join(tmp_path, file1)
-        file2_full = os.path.join(tmp_path, file2)
+    s_list.pop(0)
 
-        if name1 == name2:
-            if ext1 == ".json":                
-                shutil.move(file1_full, os.path.join(dest_label_path, id, file1))
-                shutil.move(file2_full, os.path.join(dest_img_path, id, file2))
-            else:
-                shutil.move(file1_full, os.path.join(dest_img_path, id, file1))
-                shutil.move(file2_full, os.path.join(dest_label_path, id, file2))
+    for filename in s_list:
+        src_file = os.path.join(file_path, filename)
+        dst_file = os.path.join(img_path, filename)
 
-            s_list.pop(0)
-            s_list.pop(0)
-        else:
-            s_list.pop(0)
+        shutil.move(src_file, dst_file)
+
+    anno_list = os.listdir(anno_path)
+    
+    for filename in anno_list:
+        src_file = os.path.join(anno_path, filename)
+        dst_file = os.path.join(label_path, filename)
+
+        shutil.move(src_file, dst_file)
+
+
 
 
 #이미지파일 확장자 갖고오는 함수
@@ -217,24 +216,26 @@ def change_json_to_image(id):
 
             shape = data["size"]
 
-            image = np.zeros((shape[0], shape[1]), dtype=np.uint8)
+            image = np.ones((shape[0], shape[1]),dtype=np.uint8) * 255
 
             for type in data["masks"]:
                 target_id = 0
 
                 for l in classes:
-                    if type == l.name:
+                    if type["label"] == l.name:
                         target_id = l.id
+                
+                raw_mask = rle_decode(type["mask"], shape)
 
-                raw_mask = rle_decode(data["masks"][type], shape)
+                row, col = np.where(raw_mask)
 
-                raw_mask = raw_mask * target_id
-
-                image = image + raw_mask
+                image[row, col] = target_id
 
             file_name = os.path.splitext(file)[0]
             
             ext = find_files_with_same_name(id_image_path, file_name)
+
+            os.remove(file_path)
             
             file_path = file_path.replace(".json", ext)
 
