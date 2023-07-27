@@ -14,7 +14,7 @@ from torchvision.utils import draw_segmentation_masks
 save_annotate = []
 hrnet_label = [
     "",
-    "background,traffic_light_controller,wheelchair,truck,traffic_sign,traffic_light,stroller,stop,scooter,pole,person,motorcycle,dog,cat,carrier,car,bus,bollard,bicycle,barricade",
+    "traffic_light_controller,wheelchair,truck,traffic_sign,traffic_light,stroller,stop,scooter,pole,person,motorcycle,dog,cat,carrier,car,bus,bollard,bicycle,barricade,background",
 ]
 classes = {
     "traffic_light_controller": [0, (0, 0, 255)],
@@ -39,7 +39,6 @@ classes = {
     "background": [255, (0, 0, 0)],  # 배경
 }
 color_dict = {
-    "background": "#ffffff",
     "traffic_light_controller": "#0000ff",
     "wheelchair": "#ff0000",
     "carrier": "#004000",
@@ -59,6 +58,7 @@ color_dict = {
     "bollard": "#400040",
     "motorcycle": "#8000ff",
     "bicycle": "#004040",
+    "background": "#ffffff",
 }
 global_points = []
 global_point_label = []
@@ -247,7 +247,8 @@ def modify(id, img_path, label, image, coord):
     mask_array = json.loads(res.content)
 
     temp = modify_label(np.array(mask_array), label)
-    return draw_image(np.array(image), torch.tensor(np.array(temp), dtype=bool))
+    coord = []
+    return draw_image(np.array(image), torch.tensor(np.array(temp), dtype=bool)), coord
 
 
 def modify_label(mask, label):
@@ -317,7 +318,18 @@ with gr.Blocks(
     with gr.Tab("Annotation Tab"):
         with gr.Row():
             with gr.Column(scale=3):
-                present_img = gr.Textbox(label="present Image name", interactive=False)
+                present_img = gr.Textbox(
+                    label="present Image name", interactive=False, visible=False
+                )
+                gr.HighlightedText(
+                    label="Label Color Map",
+                    value=[
+                        (i, value) for i, value in enumerate(list(color_dict.keys()))
+                    ],
+                    color_map=color_dict,
+                    show_legend=True,
+                    combine_adjacent=True,
+                )
             with gr.Column(scale=1):
                 request_btn_e = gr.Button("request", variant="primary")
         with gr.Row():
@@ -342,9 +354,11 @@ with gr.Blocks(
             with gr.Column():
                 clear_btn_e = gr.Button("clear")
             with gr.Column():
-                dropdown = gr.Dropdown(interactive=True)
+                dropdown = gr.Dropdown(label="label_list", interactive=True)
             with gr.Column():
-                add_del_radio = gr.Radio(["add label", "delete label"])
+                add_del_radio = gr.Radio(
+                    ["add label", "delete label"], label="add/delete"
+                )
             with gr.Column():
                 modify_btn_e = gr.Button("modify")
         with gr.Row():
@@ -419,7 +433,7 @@ with gr.Blocks(
     modify_btn_e.click(
         fn=modify,
         inputs=[id, present_img, dropdown, origin_img_e, coord],
-        outputs=[cond_img_e],
+        outputs=[cond_img_e, coord],
     )
     ################################################
 
