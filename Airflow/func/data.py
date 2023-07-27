@@ -266,6 +266,6 @@ if __name__=='__main__':
 
             change_json_to_image(id)
 
-            refresh_tmp()
+        #     refresh_tmp()
 
-        refresh_new_data()
+        # refresh_new_data()

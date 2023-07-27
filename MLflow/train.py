@@ -6,7 +6,7 @@ import argparse
 from datetime import datetime
 from pytorch_lightning.loggers.mlflow import MLFlowLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
-from utils import seed_everything
+from utils import seed_everything, request_weight
 import os
 import pytz
 from models.light import PLModel
@@ -18,8 +18,8 @@ def get_arg():
     parser = argparse.ArgumentParser(description="mlflow-pytorch test")
     parser.add_argument("--batch",type=int, default=8)
     parser.add_argument("--val_batch",type=int, default=8)
-    parser.add_argument("--lr",type=float, default=1e-4)
-    parser.add_argument("--epochs",type=int,default=2)
+    parser.add_argument("--lr",type=float, default=5e-4)
+    parser.add_argument("--epochs",type=int,default=50)
     parser.add_argument("--accelerator", choices=['cpu','gpu','auto'],default='gpu')
     parser.add_argument("--precision", choices=['32','16'],default='16')
     parser.add_argument("--seed", type=int , default=42)
@@ -46,25 +46,22 @@ def run(args):
     # clinet 설정
     client = MlflowClient(tracking_uri=tracking_uri)
     
-    # 실험 이름에 따라 실험 뽑기
+    # experiment 생성
     experiment = mlflow.get_experiment_by_name(args.experiment_name)
-    
-    # 없다면 생성
     if experiment is None:
         experiment_id = mlflow.create_experiment(name=args.experiment_name)
         experiment = mlflow.get_experiment_by_name(args.experiment_name)
-    
-    # 이전 실험들을 불러와서 제일 높은 max값 불러오기
     experiment_id = experiment.experiment_id
     
-    runs = client.search_runs(experiment_id)
+    # regist name의 production level의 score 뽑기
+    registered_models = mlflow.search_model_versions()
     best_score = 0
-    if len(runs):
-        for run in runs:
-            if 'test_score' in run.data.metrics:
-                best_score = max(run.data.metrics['test_score'],best_score)
-        # best_runs = max(runs, key=lambda r: r.data.metrics['test_score'])
-        # best_score = best_runs.data.metrics['test_score']
+    pre_version = -1
+    if registered_models:
+        for m in registered_models:
+            if m.current_stage == 'Production' and m.name == args.regist_name:
+                best_score = float(m.tags['score'])
+                pre_version = int(m.version)
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
@@ -139,17 +136,14 @@ def run(args):
                 )
             print(f"model '{args.regist_name}' {now.version} is changing 'Production'")
             
-            # 마지막 버전 가져오기 (현재버전)-> return list
-            last_version = client.get_latest_versions(
-                                                    name=args.regist_name,
-                                                    stages=['Production'])[0]
-            
             # checkpoint에 weight저장
-            torch.save({"state_dict":model.net.state_dict()}, f=args.pretrained.replace("origin","best"))
+            save_path = args.pretrained.replace("origin","best")
+            torch.save({"state_dict":model.net.state_dict()}, f=save_path)
             
-            pre_version = int(last_version.version)-1
+            request_weight(save_path)
+            
             # 이전 버전이 있었다면 staging변경
-            if pre_version > 0:
+            if pre_version > -1:
                 # 이전 버전 Staging
                 client.transition_model_version_stage(
                     name=args.regist_name,
@@ -158,7 +152,6 @@ def run(args):
                     )
                 print(f"pre-version {pre_version} is changing 'Staging'")
             
-
 
 if __name__=='__main__':
     args = get_arg()
