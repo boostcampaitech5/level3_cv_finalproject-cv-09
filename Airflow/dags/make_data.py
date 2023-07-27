@@ -51,10 +51,10 @@ with DAG(
     )
     
     # trigger file 생성
-    remove_file_task = BashOperator(
+    create_trigger_task = BashOperator(
         task_id = 'create_retrain_trigger',
         bash_command=f'touch {trigger_path}'
     )
     
     # trigger 파일 발견하면 삭제하고 retrain
-    make_data_task >> remove_file_task
+    make_data_task >> create_trigger_task

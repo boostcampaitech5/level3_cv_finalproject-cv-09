@@ -54,7 +54,7 @@ with DAG(
     )
     
     # github mlflow의 train 코드
-    bash_command = f"python {os.path.abspath(os.path.dirname(os.path.dirname(__file__)))}/MLflow/train.py"
+    bash_command = f"python {os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))}/MLflow/train.py"
     
     retrain_task = BashOperator(
         task_id = 'retrain',
