@@ -101,7 +101,7 @@ def zip_upload(is_walking, img_zip, id):
     with open(img_zip.name, "rb") as f:
         files = {"files": f}
         res = requests.post(
-            "http://127.0.0.1:30008/zip_upload/",
+            "http://127.0.0.1:40001/zip_upload/",
             data=data,
             files=files,
         )
@@ -131,7 +131,7 @@ def viz_img(id, path):
 
 def segment(id, img_path):
     data = {"path": os.path.join(str(id), str(img_path))}
-    seg = requests.post("http://127.0.0.1:30008/segment/", data=data)
+    seg = requests.post("http://127.0.0.1:40001/segment/", data=data)
     mask_dict = json.loads(seg.content)
 
     return mask_dict
@@ -141,7 +141,7 @@ def hrnet_request(id, img_path):
     img_prefix = f"data/{id}"
     image_pil = Image.open(os.path.join(img_prefix, img_path)).convert("RGB")
     data = {"path": os.path.join(str(id), str(img_path))}
-    res = requests.post("http://127.0.0.1:30008/segment_hrnet/", data=data)
+    res = requests.post("http://127.0.0.1:40001/segment_hrnet/", data=data)
     mask_dict = json.loads(res.content)
 
     temp = []
@@ -164,7 +164,7 @@ def segment_text(id, img_path, text_prompt, threshold):
         "text_prompt": string_prompt,
         "threshold": threshold,
     }
-    seg = requests.post("http://127.0.0.1:30008/segment_text/", data=data)
+    seg = requests.post("http://127.0.0.1:40001/segment_text/", data=data)
     mask_dict = json.loads(seg.content)
 
     temp = []
@@ -187,7 +187,7 @@ def json_upload(id):
     with open(f"data/{id}/annotations.zip", "rb") as f:
         files = {"files": f}
         res = requests.post(
-            "http://127.0.0.1:30008/json_upload/",
+            "http://127.0.0.1:40001/json_upload/",
             data=data,
             files=files,
         )
@@ -195,16 +195,20 @@ def json_upload(id):
 
 def finish(id):
     data = {"id": str(id)}
-    shutil.make_archive(f"data/{id}/annotation", "zip", f"data/annotations/{id}")
+    shutil.make_archive(f"flagged/{id}/annotation", "zip", f"data/annotations/{id}")
 
-    with open(f"data/{id}/annotation.zip", "rb") as f:
+    with open(f"flagged/{id}/annotation.zip", "rb") as f:
         files = {"files": f}
         upload_res = requests.post(
-            "http://127.0.0.1:30008/json_upload/", data=data, files=files
+            "http://127.0.0.1:40001/json_upload/", data=data, files=files
         )
 
-    remove_res = requests.post("http://127.0.0.1:30008/remove/", data=data)
-    return f"data/{id}/annotation.zip"
+    remove_res = requests.post("http://127.0.0.1:40001/remove/", data=data)
+
+    shutil.rmtree(f"data/annotations/{id}")
+    shutil.rmtree(f"data/{id}")
+
+    return f"flagged/{id}/annotation.zip"
 
 
 def save_annotation(id, img_path, image):
@@ -239,7 +243,7 @@ def modify(id, img_path, label, image, coord):
         "global_points": points,
         "global_point_label": labels,
     }
-    res = requests.post("http://127.0.0.1:30008/segment/", data=data)
+    res = requests.post("http://127.0.0.1:40001/segment/", data=data)
     mask_array = json.loads(res.content)
 
     temp = modify_label(np.array(mask_array), label)
