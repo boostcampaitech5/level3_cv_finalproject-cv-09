@@ -24,13 +24,14 @@
 cd gradio
 pip install -r requirements.txt
 ```
+
 ##### FastAPI
 ##### Install Mobile SAM(for Backend Server)
-
 ```
 git clone git@github.com:ChaoningZhang/MobileSAM.git
 cd MobileSAM; pip install -e .
 ```
+
 ```
 cd ..
 cd FastAPI
@@ -113,3 +114,4 @@ pip install -r requirements.txt
     |-- assets
     `-- data
 ```
+

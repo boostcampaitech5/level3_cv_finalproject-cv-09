@@ -259,21 +259,19 @@ async def json_upload(id: str = Form(...), files: UploadFile = File(...)):
 
     with open(f"{ZIP_PATH}/{file_name}.zip", "wb") as f:
         f.write(content)
-    ZipFile(f"{ZIP_PATH}/{file_name}.zip").extractall(f"data/{id}/original")
+    ZipFile(f"{ZIP_PATH}/{file_name}.zip").extractall(f"data/{id}/original/annotations")
 
 
 @app.post("/remove/")
 def remove(id: str = Form(...)):
     if id == "":
         return 0
-    zip_file = ZipFile(f"{FOLDER_DIR}/{id}/{id}.zip", "w")
-    for file in os.listdir(f"{FOLDER_DIR}/{id}/original"):
-        zip_file.write(os.path.join(f"{FOLDER_DIR}/{id}/original", file))
-    zip_file.close()
-    
+    os.rename(f"data/{id}/original", f"data/{id}/{id}")
+    shutil.make_archive(f"data/{id}/{id}", "zip", f"data/{id}", f"{id}")
+
     # Implement SCP
     os.system(
-        f"scp -P 2251 -i ~/level3_cv_finalproject-cv-09/scp_key {FOLDER_DIR}/{id}/{id}.zip root@118.67.132.218:/opt/ml/level3_cv_finalproject-cv-09/MLflow/data/new_data"
+        f"scp -P 2251 -i ../scp_key {FOLDER_DIR}/{id}/{id}.zip root@118.67.132.218:/opt/ml/level3_cv_finalproject-cv-09/MLflow/data/new_data"
     )
 
     path = f"{FOLDER_DIR}/{id}"
