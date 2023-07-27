@@ -20,20 +20,34 @@
 ### 시작 가이드
 본 프로젝트는 Gradio, FastAPI, MLFlow, AirFlow로 구성되어 있습니다.
 ##### Gradio
-    $ cd gradio
-    $ pip install -r requirements.txt
-
+```
+cd gradio
+pip install -r requirements.txt
+```
 ##### FastAPI
-    $ cd FastAPI
-    $ pip install -r requirements.txt
+##### Install Mobile SAM(for Backend Server)
+
+```
+git clone git@github.com:ChaoningZhang/MobileSAM.git
+cd MobileSAM; pip install -e .
+```
+```
+cd ..
+cd FastAPI
+pip install -r requirements.txt
+```
 
 ##### MLFlow
-    $ cd MLflow
-    $ pip install -r requirements.txt
+```
+cd MLflow
+pip install -r requirements.txt
+```
 
 ##### AirFlow
-    $ cd Airflow
-    $ pip install -r requirements.txt
+```
+cd Airflow
+pip install -r requirements.txt
+```
 
 ---
 ### 기술 스택
@@ -55,8 +69,8 @@
 ---
 ### 화면 구성
 
-화면 보여주기
-
+![image1](gradio/assets/image1.png)
+![image2](gradio/assets/image2.png)
 
 ---
 ### 주요 기능 설명
@@ -74,3 +88,28 @@
 
 
 ### 디렉토리 구조
+```
+.
+|-- Airflow
+|   |-- dags
+|   `-- func
+|-- FastAPI
+|   |-- __pycache__
+|   |-- data
+|   |-- hrnet
+|   |-- lang_segment_anything
+|   |-- mobile_sam
+|   |-- utils
+|   `-- weights
+|-- MLflow
+|   |-- checkpoint
+|   |-- dataset
+|   `-- models
+|-- MobileSAM
+|   |-- app
+|   `-- mobile_sam
+`-- gradio
+    |-- __pycache__
+    |-- assets
+    `-- data
+```
