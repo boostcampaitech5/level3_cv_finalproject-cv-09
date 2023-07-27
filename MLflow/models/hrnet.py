@@ -480,10 +480,10 @@ class HRNetBackbone(object):
             arch_net = HighResolutionNet(MODEL_CONFIGS['hrnet48'],
                                             bn_type=self.configer.bn_type,
                                             bn_momentum=0.1)
-            arch_net = ModuleHelper.load_model(arch_net, 
-                                                pretrained=self.configer.pretrained, 
-                                                all_match=False,
-                                                network='hrnet')
+            # arch_net = ModuleHelper.load_model(arch_net, 
+            #                                     pretrained=self.configer.pretrained, 
+            #                                     all_match=False,
+            #                                     network='hrnet')
         return arch_net
 
 
