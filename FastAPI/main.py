@@ -279,3 +279,11 @@ def remove(id: str = Form(...)):
     path = f"{FOLDER_DIR}/{id}"
     if os.path.isdir(path):
         shutil.rmtree(path)
+
+
+@app.post("/weight/")
+async def weight(files: UploadFile = File(...)):
+    file_name = files.filename
+    content = await files.read()
+    with open(f"/opt/ml/level3_cv_finalproject-cv-09/FastAPI/hrnet/checkpoint/{file_name}") as f:
+        f.write(content)
