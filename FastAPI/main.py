@@ -1,31 +1,23 @@
-import os
-import torch
 import numpy as np
+import os
 import shutil
-from datetime import datetime
-from torchvision import transforms
+import torch
+from collections import namedtuple
+from fastapi import FastAPI, UploadFile, File, Form
+from fastapi.responses import JSONResponse
 from hrnet.models.light import PLModel
 from hrnet.dataset import CustomKRLoadSegmentation
-from torchvision.transforms import ToTensor, Normalize
-from zipfile import ZipFile
-from utils.tools_gradio import fast_process
-from utils.tools import box_prompt, format_results, point_prompt
-from fastapi import FastAPI, UploadFile, File, Form
-from fastapi.responses import FileResponse, JSONResponse
 from PIL import Image
 from mobile_sam import SamAutomaticMaskGenerator, SamPredictor, sam_model_registry
-from collections import namedtuple
-
-# from lang_segment_anything.lang_sam import LangSAM
-# from lang_segment_anything.lang_sam import SAM_MODELS
-# from lang_segment_anything.lang_sam.utils import draw_image
-# from lang_segment_anything.lang_sam.utils import load_image
+from torchvision.transforms import ToTensor, Normalize, Compose
+from utils.tools_gradio import fast_process
+from utils.tools import box_prompt, format_results, point_prompt
+from zipfile import ZipFile
 
 
 FOLDER_DIR = "data"
 
 app = FastAPI()
-
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -42,9 +34,6 @@ async def startup_event():
     app.state.mask_generator = SamAutomaticMaskGenerator(mobile_sam)
     app.state.predictor = SamPredictor(mobile_sam)
 
-    # Lang-SAM load
-    # app.state.lang_sam = LangSAM(sam_type="vit_h", device=device)
-
 
 def change_path(path):
     if path.endswith(".png"):
@@ -53,12 +42,6 @@ def change_path(path):
 
 
 def rle_encode(mask):
-    """
-    다차원 텐서를 RLE 인코딩하는 함수
-
-    :param tensor: 2차원 텐서 (height x width)
-    :return: RLE 인코딩된 문자열 리스트
-    """
     mask_flatten = mask.flatten()
     mask_flatten = np.concatenate([[0], mask_flatten, [0]])
     runs = np.where(mask_flatten[1:] != mask_flatten[:-1])[0] + 1
@@ -112,7 +95,7 @@ def process_image_and_get_masks(img):
     args = get_arg()
 
     # Load and preprocess the image
-    convert_tensor = transforms.Compose(
+    convert_tensor = Compose(
         [ToTensor(), Normalize((0.286, 0.325, 0.283), (0.186, 0.190, 0.187))]
     )
     image = convert_tensor(img)
@@ -126,20 +109,6 @@ def process_image_and_get_masks(img):
     return masks
 
 
-# def mask_color(mask, tuple):
-#    cmap = tuple.cmap
-#    if isinstance(mask, np.ndarray):
-#        r_mask = np.zeros_like(mask, dtype=np.uint8)
-#        g_mask = np.zeros_like(mask, dtype=np.uint8)
-#        b_mask = np.zeros_like(mask, dtype=np.uint8)
-#        for k in range(len(cmap)):
-#            indice = mask == k
-#            r_mask[indice] = cmap[k][0]
-#            g_mask[indice] = cmap[k][1]
-#            b_mask[indice] = cmap[k][2]
-#        return np.stack([b_mask, g_mask, r_mask], axis=2)
-
-
 def hrnet_inference(id, file_name):
     img = Image.open(f"{FOLDER_DIR}/{id}/original/{file_name}")
     mask, mask_list = process_image_and_get_masks(img)
@@ -147,12 +116,6 @@ def hrnet_inference(id, file_name):
 
     for element in mask_list:
         mask_dict["masks"][element[0]] = rle_encode(np.array(element[1]))
-
-    # 이미지 저장
-    # out = np.squeeze(mask, axis=0)
-    # out = mask_color(out, CustomKRLoadSegmentation)
-    # output_path = f"{FOLDER_DIR}/{id}/hrnet/{file_name}"
-    # cv2.imwrite(output_path, out)
 
     return mask_dict
 
@@ -230,36 +193,6 @@ async def segment_everything(
     return fig, mask_dict
 
 
-# @torch.no_grad()
-# async def segment_dino(
-#     box_threshold=0.7, text_threshold=0.7, image_path="", text_prompt="sky"
-# ):
-#     image_pil = load_image(image_path)  # width x height
-#     masks, boxes, phrases, logits = app.state.lang_sam.predict(
-#         image_pil, text_prompt, box_threshold, text_threshold
-#     )  # channel x height x width
-#     labels = [f"{phrase} {logit:.2f}" for phrase, logit in zip(phrases, logits)]
-#     mask_dict = {"masks": dict(), "size": [image_pil.height, image_pil.width]}
-#     print(mask_dict["size"])
-
-#     for idx, label in enumerate(labels):
-#         label, logit = label.split()
-#         if label in mask_dict["masks"]:
-#             mask1 = np.array(mask_dict["masks"][label])
-#             mask2 = np.array(masks[idx])
-#             or_mask = np.logical_or(mask1, mask2)
-#             mask_dict["masks"][label] = torch.tensor(or_mask)
-#         else:
-#             mask_dict["masks"][label] = torch.tensor(masks[idx])
-#     for label, mask in mask_dict["masks"].items():
-#         rle_mask = rle_encode(mask)
-#         mask_dict["masks"][label] = rle_mask
-#     image_array = np.asarray(image_pil)
-#     image = draw_image(image_array, masks, boxes, labels)
-#     image = Image.fromarray(np.uint8(image)).convert("RGB")
-#     return mask_dict, image
-
-
 @app.post("/zip_upload/")
 async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
     path_list = []
@@ -307,78 +240,48 @@ async def segment(
     return output_reponse
 
 
-# @app.post("/segment_text/")
-# async def segment_text(
-#     path: str = Form(...), text_prompt: str = Form(...), threshold: float = Form(...)
-# ):
-#     path = change_path(path)
-#     id, file_name = path.split("/")
-#     img_path = f"{FOLDER_DIR}/{id}/original/{file_name}"
-#     text_prompt = text_prompt.replace(",", ".")
-#     text_seg_dict, segmented_image = await segment_dino(
-#         threshold, threshold, img_path, text_prompt=text_prompt
-#     )
-#     if not os.path.isdir(f"{FOLDER_DIR}/{id}/segment/"):
-#         os.mkdir(f"{FOLDER_DIR}/{id}/segment/")
-#     segmented_image.save(f"{FOLDER_DIR}/{id}/segment/dino_{file_name}")
-#     # mask_json = jsonable_encoder(text_seg_masks.tolist())
-#     # seg_dino_img = FileResponse(
-#     #     f"{FOLDER_DIR}/{id}/segment/dino_{file_name}",
-#     #     media_type="image/jpg",
-#     # )
-#     output_reponse = JSONResponse(content=text_seg_dict)
-#     return output_reponse
-
-
-# Send data from FastAPI server to FE server
+# Send data to FE server
 @app.post("/segment_hrnet/")
 def segment_hrnet(path: str = Form(...)):
     path = change_path(path)
     id, file_name = path.split("/")
-
     rle_dict = hrnet_inference(id, file_name)
-
-    # hrnet_img = FileResponse(
-    #    f"{FOLDER_DIR}/{id}/hrnet/{file_name}",
-    #    media_type="image/jpg",
-    # )
     hrnet_json = JSONResponse(content=rle_dict)
     return hrnet_json
 
 
+# Upload data from FE server
 @app.post("/json_upload/")
 async def json_upload(id: str = Form(...), files: UploadFile = File(...)):
     file_name = (files.filename).split(".")[0]
     content = await files.read()
-    print(content)
     ZIP_PATH = f"{FOLDER_DIR}/{id}/zip"
 
     with open(f"{ZIP_PATH}/{file_name}.zip", "wb") as f:
         f.write(content)
-    ZipFile(f"{ZIP_PATH}/{file_name}.zip").extractall(f"data/{id}/original")
+    ZipFile(f"{ZIP_PATH}/{file_name}.zip").extractall(f"data/{id}/original/annotations")
 
 
 @app.post("/remove/")
-# def remove(id: str = Form(...), annotated_data: dict = Form(...)):
 def remove(id: str = Form(...)):
     if id == "":
         return 0
-    zip_file = ZipFile(f"{FOLDER_DIR}/{id}/{id}.zip", "w")
-    for file in os.listdir(f"{FOLDER_DIR}/{id}/original"):
-        zip_file.write(os.path.join(f"{FOLDER_DIR}/{id}/original", file))
-    zip_file.close()
-    """
-    Send zipfile to airflow server using scp command
-    scp_key file is vital
-    Following terminal command was implemented properly :
-    scp -P 2251 -i ~/level3_cv_finalproject-cv-09/scp_key FastAPI/data/a/zip/insta.zip root@118.67.132.218:/opt/ml/
-    """
-    # now = datetime.now().strftime(f"{id}%Y%m%d%H%M%S")
+    os.rename(f"data/{id}/original", f"data/{id}/{id}")
+    shutil.make_archive(f"data/{id}/{id}", "zip", f"data/{id}", f"{id}")
+
     # Implement SCP
     os.system(
-        f"scp -P 2251 -i ~/level3_cv_finalproject-cv-09/scp_key {FOLDER_DIR}/{id}/{id}.zip root@118.67.132.218:/opt/ml/level3_cv_finalproject-cv-09/MLflow/data/new_data"
+        f"scp -P 2251 -i ../scp_key {FOLDER_DIR}/{id}/{id}.zip root@118.67.132.218:/opt/ml/level3_cv_finalproject-cv-09/MLflow/data/new_data"
     )
 
     path = f"{FOLDER_DIR}/{id}"
     if os.path.isdir(path):
         shutil.rmtree(path)
+
+
+@app.post("/weight/")
+async def weight(files: UploadFile = File(...)):
+    file_name = files.filename
+    content = await files.read()
+    with open(f"/opt/ml/level3_cv_finalproject-cv-09/FastAPI/hrnet/checkpoint/{file_name}", "wb") as f:
+        f.write(content)
