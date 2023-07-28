@@ -36,8 +36,8 @@ async def startup_event():
 
 
 def change_path(path):
-    if path.endswith(".png"):
-        path = str(path.split(".")[0] + ".jpg")
+    if path.endswith(".jpg"):
+        path = str(path.split(".")[0] + ".png")
     return path
 
 
@@ -215,12 +215,12 @@ async def zip_upload(id: str = Form(...), files: UploadFile = File(...)):
     ZipFile(f"{ZIP_PATH}/{file_name}.zip").extractall(f"data/{id}/original")
     # Convert PNG to JPG
     for file in os.listdir(f"{FOLDER_DIR}/{id}/original/"):
-        if file.endswith(".png"):
+        if file.endswith(".jpg"):
             path = f"{FOLDER_DIR}/{id}/original/{file.split('.')[0]}"
-            jpg_path = f"{path}.jpg"
-            img = Image.open(f"{path}.png").convert("RGB")
-            img.save(jpg_path)
-            os.remove(f"{path}.png")
+            png_path = f"{path}.png"
+            img = Image.open(f"{path}.jpg").convert("RGB")
+            img.save(png_path)
+            os.remove(f"{path}.jpg")
 
 
 @app.post("/segment/")
